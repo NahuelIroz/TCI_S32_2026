@@ -86,5 +86,5 @@ Trabajamos con **forks + `upstream`** (el flujo de colaboración real del open s
 | Legajo | Nombre y apellido | Email |
 |---|---|---|
 | 27019 | Iroz Nahuel | nahuel.t.p@hotmail.com |
-| ...   | ...               | ...   |
+| 26807 | Lucas Esteban | lucasrg3205@gmail.com |
 
