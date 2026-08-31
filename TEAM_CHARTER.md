@@ -136,3 +136,4 @@ El objetivo de este acuerdo no es sancionar ante una dificultad puntual, sino **
 ## 7. Compromiso del equipo
 
 Todos los integrantes se comprometen a respetar estas reglas, mantener una comunicación activa, cumplir con las tareas asignadas y colaborar para alcanzar los objetivos definidos.
+
