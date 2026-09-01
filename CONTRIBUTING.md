@@ -2,6 +2,10 @@
 
 El proyecto utiliza el modelo **Feature Branch Flow**, siguiendo la convención establecida por el TCI.
 
+La decision de utilizar **Feature Branch Flow** se debe principalmente al aislamiento del codigo, lo cual nos permite desarrollar distintas features de manera simultanea minimizando los conflictos.
+
+Tambien utilizando este flujo de trabajo nos permite proteger la estabilidad del main trabajando en una rama por feature y haciendo la revision antes de mergear. 
+
 La regla principal es:
 
 > **Una feature = una rama = un Pull Request**
