@@ -5,7 +5,7 @@
 | Integrante     | Email                                                   |
 | -------------- | ------------------------------------------------------- |
 | Nahuel Iroz    | [nahuel.t.p@hotmail.com]|
-| [Integrante 2] | [email]                                                 |
+| Lucas Esteban | [lucasrg3205@gmail.com]                                                 |
 
 ---
 
