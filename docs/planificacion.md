@@ -5,3 +5,5 @@
 NahuelIroz -- LucasEsteban3205  
 
 ## Dominio
+Frase para generar conflictos
+
