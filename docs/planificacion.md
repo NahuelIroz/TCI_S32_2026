@@ -2,6 +2,6 @@
 
 ## Equipo: 
 
-NahuelIroz - LucasEsteban3205
+NahuelIroz -- LucasEsteban3205  
 
 ## Dominio
