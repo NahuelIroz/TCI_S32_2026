@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Farmaceutica</title>
+</head>
+
+<body>
+    <h1 class="Titulo">Farmaceutica</h1>
+    <nav class="Menu">
+
+        <input type="checkbox" id="menu-toggle">
+
+        <label for="menu-toggle" class="menu-icon">
+            ☰ Menú
+        </label>
+
+        <ul>
+            <li><a href="#">Incidentes</a></li>
+            <li><a href="#">Reservas</a></li>
+            <li><a href="#">Respuesta</a></li>
+            <li><a href="#">Stock</a></li>
+        </ul>
+
+    </nav>
+
+    <main>
+        <div>
+            <div class="campo">
+                <label for="tipo">Maquina</label>
+                <select id="tipo" name="tipo">
+                    <option value="">Seleccione una opción</option>
+                    <option value="incendio">Maquina 1</option>
+                    <option value="accidente">Maquina2</option>
+                    <option value="otro">Maquina 3</option>
+                </select>
+            </div>
+
+            <div class="campo">
+                <label for="descripcion">Descripción</label>
+                <textarea
+                    id="descripcion"
+                    name="descripcion"
+                    rows="4"
+                    placeholder="Describa el incidente..."
+                ></textarea>
+            </div>
+
+            <form action="/subir" method="POST" enctype="multipart/form-data">
+                <label for="documento">Adjunta tu documento:</label>
+                <input type="file" id="documento" name="documento">
+                <button type="submit"> Subir archivo</button>
+            </form>
+
+            <div class="campo">
+                <label for="tipo">Turno</label>
+                <select id="tipo" name="tipo">
+                    <option value="">Seleccione una opción</option>
+                    <option value="Mañana">Mañana</option>
+                    <option value="Tarde">Tarde</option>
+                    <option value="Noche">Noche</option>
+                </select>
+            </div>
+        </div>
+
+        <button type="submit">Reportar</button>
+    </main>
+
+    <footer>
+        
+    </footer>
+
+</body>
+
+</html>
