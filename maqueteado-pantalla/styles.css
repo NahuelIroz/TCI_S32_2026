@@ -1,0 +1,180 @@
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+}
+
+
+.Menu {
+    background-color: #2c3e50;
+    margin-bottom: 10px;
+}
+
+/* Ocultamos el checkbox */
+#menu-toggle {
+    display: none;
+}
+
+/* Botón hamburguesa */
+.menu-icon {
+    display: block;
+    padding: 15px 20px;
+
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+
+    cursor: pointer;
+}
+
+
+.Menu ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    display: none;
+    flex-direction: column;
+}
+
+
+#menu-toggle:checked + .menu-icon + ul {
+    display: flex;
+}
+
+
+.Menu li {
+    border-top: 1px solid #3e5368;
+}
+
+
+.Menu a {
+    display: block;
+    padding: 14px 20px;
+
+    color: white;
+    text-decoration: none;
+    text-align: center;
+}
+
+/* Hover */
+.Menu a:hover {
+    background-color: #34495e;
+}
+
+
+
+
+@media (min-width: 768px) {
+
+  
+    .menu-icon {
+        display: none;
+    }
+
+    
+    .Menu ul {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+    }
+
+    .Menu li {
+        border-top: none;
+    }
+
+    .Menu a {
+        padding: 16px 25px;
+    }
+}
+
+
+.formulario {
+    padding: 20px;
+}
+
+.formulario h1 {
+    margin-bottom: 25px;
+    font-size: 24px;
+    color: #2c3e50;
+}
+
+
+.campo {
+    margin-bottom: 18px;
+}
+
+
+.campo label {
+    display: block;
+    margin-bottom: 7px;
+
+    font-size: 14px;
+    font-weight: bold;
+    color: #34495e;
+}
+
+
+.campo input,
+.campo select,
+.campo textarea {
+    width: 100%;
+    padding: 12px;
+
+    border: 1px solid #ccc;
+    border-radius: 6px;
+
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+
+    box-sizing: border-box;
+    background-color: white;
+}
+
+.campo input:focus,
+.campo select:focus,
+.campo textarea:focus {
+    outline: none;
+    border-color: #2c3e50;
+    box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.15);
+}
+
+
+.campo textarea {
+    resize: vertical;
+}
+
+
+button {
+    width: 35%;
+    padding: 13px;
+
+    border: none;
+    border-radius: 20px;
+
+    background-color: #2c3e50;
+    color: white;
+
+    font-size: 16px;
+    font-weight: bold;
+
+    cursor: pointer;
+    margin: 10px;
+}
+
+button:hover {
+    background-color: #34495e;
+}
+
+.Titulo {
+    margin: 10px;
+    padding-bottom: 10px;
+
+    color: #2c3e50;
+
+    font-size: 28px;
+    font-weight: bold;
+    text-align: center;
+
+  
+}
