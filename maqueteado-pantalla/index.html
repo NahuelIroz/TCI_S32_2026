@@ -6,6 +6,7 @@
 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="styles.css">
+    <script src="app.js" defer></script>
     <title>Farmaceutica</title>
 </head>
 
@@ -30,44 +31,59 @@
 
     <main>
         <div>
-            <div class="campo">
-                <label for="tipo">Maquina</label>
-                <select id="tipo" name="tipo">
-                    <option value="">Seleccione una opción</option>
-                    <option value="incendio">Maquina 1</option>
-                    <option value="accidente">Maquina2</option>
-                    <option value="otro">Maquina 3</option>
-                </select>
-            </div>
+            <form id="form-incidencia">
 
-            <div class="campo">
-                <label for="descripcion">Descripción</label>
-                <textarea
-                    id="descripcion"
-                    name="descripcion"
-                    rows="4"
-                    placeholder="Describa el incidente..."
-                ></textarea>
-            </div>
+                <div class="campo">
+                    <label for="codigo-maquina">Código de máquina</label>
+                    <input
+                        type="text"
+                        id="codigo-maquina"
+                        name="codigo-maquina"
+                        placeholder="Ej: CAL-001"
+                    >
+                </div>
 
-            <form action="/subir" method="POST" enctype="multipart/form-data">
-                <label for="documento">Adjunta tu documento:</label>
-                <input type="file" id="documento" name="documento">
-                <button type="submit"> Subir archivo</button>
+                <div class="campo">
+                    <label for="descripcion">Descripción</label>
+                    <textarea
+                        id="descripcion"
+                        name="descripcion"
+                        rows="4"
+                        maxlength="300"
+                        placeholder="Describa el incidente..."
+                    ></textarea>
+
+                    <span id="contador">0/300</span>
+                </div>
+
+                <div class="campo">
+                    <label for="foto">Adjuntar foto</label>
+                    <input
+                        type="file"
+                        id="foto"
+                        name="foto"
+                        accept="image/*"
+                    >
+                </div>
+
+                <div class="campo">
+                    <label for="turno">Turno</label>
+                    <select id="turno" name="turno">
+                        <option value="">Seleccione una opción</option>
+                        <option value="mañana">Mañana</option>
+                        <option value="tarde">Tarde</option>
+                        <option value="noche">Noche</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="btn-enviar">
+                    Reportar
+                </button>
+
             </form>
 
-            <div class="campo">
-                <label for="tipo">Turno</label>
-                <select id="tipo" name="tipo">
-                    <option value="">Seleccione una opción</option>
-                    <option value="Mañana">Mañana</option>
-                    <option value="Tarde">Tarde</option>
-                    <option value="Noche">Noche</option>
-                </select>
-            </div>
+            <div id="preview-incidencia" hidden></div>
         </div>
-
-        <button type="submit">Reportar</button>
     </main>
 
     <footer>
