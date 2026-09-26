@@ -107,3 +107,101 @@ Una **SPA (Single Page Application)** intenta actualizar el contenido de la pág
 `fetch` permite que la SPA se comunique con un servidor y obtenga los datos necesarios **sin recargar toda la página**. Por ejemplo, una SPA puede pedir una lista de usuarios, productos o publicaciones y después mostrar esos datos actualizando solamente una parte de la interfaz.
 
 Por eso `fetch` es muy útil en una SPA: permite solicitar datos al servidor de forma asincrónica y actualizar la interfaz cuando esos datos están disponibles.
+
+
+# 4.2 Búsquedas
+
+## 1. ¿Qué es un componente en React? ¿Por qué conviene dividir la UI en componentes?
+
+**Qué busqué:**
+`React qué es un componente y por qué usar componentes`
+
+**Fuente:**
+[React – Your First Component](https://react.dev/learn/your-first-component)
+
+**Qué entendí:**
+Un **componente** en React es una parte reutilizable de la interfaz que puede tener su propia lógica y representación visual.
+
+Conviene dividir la UI en componentes porque permite organizar mejor el código, reutilizar partes de la interfaz y hacer que cada componente tenga una responsabilidad más específica. Esto facilita también el mantenimiento y las modificaciones de la aplicación.
+
+---
+
+## 2. ¿Qué es JSX? ¿Por qué se parece a HTML pero no es HTML?
+
+**Qué busqué:**
+`React JSX qué es diferencia HTML`
+
+**Fuente:**
+[React – Writing Markup with JSX](https://react.dev/learn/writing-markup-with-jsx)
+
+**Qué entendí:**
+**JSX** es una extensión de sintaxis utilizada habitualmente con React que permite escribir una estructura parecida a HTML dentro de JavaScript.
+
+Se parece a HTML porque utiliza etiquetas como `<div>`, `<h1>` o `<button>`, pero **no es HTML**. JSX es transformado por las herramientas de desarrollo en código JavaScript que React puede utilizar para construir la interfaz.
+
+---
+
+## 3. ¿Qué es el estado (`useState`)? ¿En qué se diferencia de una variable común?
+
+**Qué busqué:**
+`React useState estado diferencia variable común`
+
+**Fuente:**
+[React – State: A Component's Memory](https://react.dev/learn/state-a-components-memory)
+
+**Qué entendí:**
+El **estado** es información que un componente necesita recordar entre sus diferentes renderizados. `useState` permite crear ese estado y una función para modificarlo.
+
+La diferencia con una variable común es que cuando cambia una variable normal, React no necesariamente vuelve a renderizar el componente. En cambio, cuando se actualiza un estado mediante su función correspondiente, React sabe que debe actualizar la interfaz.
+
+Ejemplo:
+
+```tsx
+const [contador, setContador] = useState(0);
+```
+
+`contador` contiene el valor actual y `setContador` permite modificarlo y provocar una nueva renderización.
+
+---
+
+## 4. ¿Qué son las props? ¿En qué se diferencian del estado?
+
+**Qué busqué:**
+`React props diferencia state`
+
+**Fuente:**
+[React – Passing Props to a Component](https://react.dev/learn/passing-props-to-a-component)
+
+**Qué entendí:**
+Las **props** son datos que un componente recibe desde otro componente, normalmente desde su componente padre. Permiten enviar información y configurar cómo se comporta o se muestra un componente.
+
+La principal diferencia es que las **props son recibidas desde afuera**, mientras que el **estado pertenece al propio componente** y puede cambiar durante su funcionamiento.
+
+Por ejemplo:
+
+```tsx
+function Saludo({ nombre }) {
+  return <h1>Hola {nombre}</h1>;
+}
+```
+
+En este caso, `nombre` es una prop que el componente recibe.
+
+---
+
+## 5. ¿Por qué usar TypeScript en el frontend? ¿Qué problema te resuelve antes de que el código corra?
+
+**Qué busqué:**
+`TypeScript frontend beneficios detectar errores antes de ejecutar código`
+
+**Fuente:**
+[TypeScript – Why TypeScript](https://www.typescriptlang.org/why-create-typescript/)
+
+**Qué entendí:**
+**TypeScript** agrega un sistema de tipos a JavaScript. Esto permite detectar determinados errores mientras estamos escribiendo o compilando el código, antes de que la aplicación llegue a ejecutarse.
+
+Por ejemplo, si una función espera recibir un `string` pero le pasamos un `number`, TypeScript puede marcar el problema antes de ejecutar la aplicación.
+
+Esto ayuda a encontrar errores relacionados con los tipos de datos y hace que el código sea más fácil de mantener y entender, especialmente en proyectos grandes.
+
+---
