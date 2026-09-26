@@ -252,3 +252,86 @@ npm run dev
 
 Esto permite trabajar con React de una manera más rápida y organizada.
 
+
+# Búsquedas – API Contract, Mock Server y OpenAPI
+
+## 1. ¿Qué es un contrato de API (API contract)? ¿Por qué se dice que el contrato se define antes de codificar?
+
+Un **contrato de API** es una especificación que define cómo se van a comunicar dos partes de una aplicación, por ejemplo, el frontend y el backend. Describe aspectos como los endpoints disponibles, los métodos HTTP, los datos que se deben enviar y el formato de las respuestas.
+
+Se dice que el contrato se define **antes de codificar** porque permite acordar primero cómo será la comunicación entre frontend y backend. De esta manera, ambos equipos pueden desarrollar sus partes siguiendo las mismas reglas, sin tener que esperar a que el otro termine.
+
+---
+
+## 2. ¿Qué es un mock server y para qué sirve en un equipo donde frontend y backend se construyen en paralelo?
+
+Un **mock server** es un servidor que simula el comportamiento de una API real. Devuelve respuestas de ejemplo siguiendo el contrato definido, aunque el backend real todavía no esté terminado.
+
+En un equipo donde frontend y backend se desarrollan en paralelo, permite que el equipo de frontend pueda comenzar a realizar y probar las pantallas y la lógica utilizando datos simulados, mientras el equipo de backend desarrolla la API real.
+
+Esto permite que ambos equipos trabajen al mismo tiempo y reduce la dependencia entre ellos.
+
+---
+
+## 3. ¿OpenAPI y Swagger son lo mismo? ¿Cuál es la relación entre ambos nombres?
+
+**OpenAPI y Swagger no son exactamente lo mismo.**
+
+**OpenAPI** es una especificación estándar para describir APIs HTTP. Define una forma estructurada de documentar los endpoints, parámetros, respuestas, modelos de datos y otros aspectos de una API.
+
+**Swagger** originalmente fue el nombre de la especificación que posteriormente se convirtió en OpenAPI. Actualmente, Swagger es principalmente el nombre de un conjunto de herramientas que trabajan con la especificación OpenAPI, como Swagger UI y Swagger Editor.
+
+En resumen:
+
+* **OpenAPI:** es la especificación/estándar.
+* **Swagger:** es el conjunto de herramientas y el nombre histórico relacionado con esa especificación.
+
+---
+
+## 4. ¿Qué es un `$ref` en un documento OpenAPI y para qué sirve?
+
+`$ref` es una forma de **referenciar o reutilizar una definición** que está ubicada en otra parte del documento OpenAPI o incluso en otro archivo.
+
+Por ejemplo:
+
+```yaml
+schema:
+  $ref: '#/components/schemas/Incidencia'
+```
+
+En este caso, `$ref` indica que el esquema de `Incidencia` debe buscarse dentro de `components/schemas`.
+
+Su principal utilidad es **evitar repetir definiciones**. Si una misma estructura se utiliza en varios endpoints, se puede definir una sola vez y luego referenciarla mediante `$ref`.
+
+Esto hace que el contrato sea más ordenado, reutilizable y fácil de mantener.
+
+
+# ¿Qué es OpenAPI y Swagger?
+
+**OpenAPI** es un estándar que permite describir una API de forma estructurada. En él se pueden definir los endpoints, los métodos HTTP, los datos que recibe la API, las respuestas y los posibles errores.
+
+**Swagger** es un conjunto de herramientas que permite trabajar con especificaciones OpenAPI. Por ejemplo, **Swagger UI** puede leer un archivo OpenAPI y mostrar una interfaz web donde se pueden consultar y probar los diferentes endpoints de una API.
+
+### Ejemplo
+
+Podemos tener un archivo `openapi.yaml`:
+
+```yaml
+paths:
+  /incidencias:
+    get:
+      responses:
+        '200':
+          description: Lista de incidencias
+```
+
+Este archivo utiliza el estándar **OpenAPI**.
+
+Luego, una herramienta como **Swagger UI** puede utilizar ese archivo para mostrar la documentación de la API y permitir probar sus endpoints.
+
+### En resumen
+
+* **OpenAPI:** es el estándar para describir y documentar una API.
+* **Swagger:** es un conjunto de herramientas que trabaja con especificaciones OpenAPI.
+* **Swagger UI:** permite visualizar y probar una API a partir de su especificación OpenAPI.
+
