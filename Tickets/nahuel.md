@@ -205,3 +205,50 @@ Por ejemplo, si una función espera recibir un `string` pero le pasamos un `numb
 Esto ayuda a encontrar errores relacionados con los tipos de datos y hace que el código sea más fácil de mantener y entender, especialmente en proyectos grandes.
 
 ---
+
+
+# Preguntas guía
+
+## 1. ¿Qué relación ves entre el patrón "separar datos de la vista" que usaste en el taller de incidencia y el estado de React?
+
+La relación es que ambos permiten **separar la información de la forma en que se muestra**.
+
+En el taller de incidencias, los datos de una incidencia estaban separados de la estructura visual que los mostraba. En React, el **estado** permite guardar esos datos dentro del componente y utilizarlos para generar la vista.
+
+Cuando el estado cambia, React vuelve a renderizar el componente y muestra los datos actualizados. Esto permite que la interfaz se mantenga sincronizada con la información.
+
+---
+
+## 2. ¿Por qué el `interface IncidenciaProps` evita errores? ¿Dónde "vive" esa verificación: en el navegador o en el editor?
+
+El `interface IncidenciaProps` define qué propiedades debe recibir el componente y qué tipo de dato tiene cada una.
+
+Por ejemplo:
+
+```tsx
+interface IncidenciaProps {
+  titulo: string;
+  prioridad: number;
+}
+```
+
+Si intentamos utilizar el componente pasando un dato incorrecto, **TypeScript puede detectar el error antes de ejecutar el programa**.
+
+Esta verificación ocurre principalmente durante el desarrollo, en el **editor y en el proceso de compilación/type-checking de TypeScript**, no en el navegador. Los tipos de TypeScript no se ejecutan en el navegador porque se eliminan al transformar el código a JavaScript.
+
+---
+
+## 3. ¿Qué hace Vite que antes hacías a mano (o con un `script` de `<head>`)?
+
+Vite se encarga de varias tareas que anteriormente podían requerir configuración manual.
+
+Por ejemplo, se ocupa de preparar y servir el proyecto durante el desarrollo, procesar los archivos de JavaScript/TypeScript y JSX, actualizar automáticamente la página cuando modificamos el código mediante **HMR (Hot Module Replacement)** y preparar la aplicación para producción.
+
+Antes era necesario incluir scripts y configurar herramientas manualmente para poder utilizar determinadas tecnologías. Con Vite, gran parte de esa configuración ya viene preparada y podemos iniciar el proyecto con comandos como:
+
+```bash
+npm run dev
+```
+
+Esto permite trabajar con React de una manera más rápida y organizada.
+
