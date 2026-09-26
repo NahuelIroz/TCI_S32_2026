@@ -1,4 +1,6 @@
-# .2 Búsquedas
+# Investigación — [Iróz Nahuel] (Legajo 27019)
+
+# Parte A
 
 ## 1. ¿Qué es una SPA (Single Page Application) y en qué se diferencia de una página tradicional (MPA)?
 
@@ -14,6 +16,7 @@ Una **SPA** carga un único documento y luego utiliza JavaScript para actualizar
 En una **MPA (Multi-Page Application)**, cada navegación normalmente implica cargar una nueva página desde el servidor.
 
 ---
+# Parte B
 
 ## 2. ¿Qué es una Promise en JavaScript y para qué sirve? ¿Qué problema resuelve?
 
@@ -273,7 +276,8 @@ Esto permite que ambos equipos trabajen al mismo tiempo y reduce la dependencia 
 
 ---
 
-## 3. ¿OpenAPI y Swagger son lo mismo? ¿Cuál es la relación entre ambos nombres?
+## Parte C
+# ¿OpenAPI y Swagger son lo mismo? ¿Cuál es la relación entre ambos nombres?
 
 **OpenAPI y Swagger no son exactamente lo mismo.**
 
@@ -335,3 +339,7 @@ Luego, una herramienta como **Swagger UI** puede utilizar ese archivo para mostr
 * **Swagger:** es un conjunto de herramientas que trabaja con especificaciones OpenAPI.
 * **Swagger UI:** permite visualizar y probar una API a partir de su especificación OpenAPI.
 
+## Reflexion 
+* Lo que mas me costó fue entender el la comuicación entre los componentes de React, los Props y el manejo de errores, los pude entender haciendo las práacticas guíadas, leyendo la bibliografía y viendo los tutariales propuestos por la cátedra.
+
+* Otra cosa que no entendí y lo voy a consultar en la próxima clase son los contratos, si bien leí no me quedó muy en claro ya que no pude hacer la práctica guíada porque no encontré e ejemplo y es ahí donde me surgen la mayoría de las dudas las cuales son resueltas en porque por cada duda vuelvo a la bibliografía y gracias a ese "mecheo" entre teoría y práctica puedo asentar bien los conocimientos.
