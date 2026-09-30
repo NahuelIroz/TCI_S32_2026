@@ -3,8 +3,7 @@ import heroImg from './assets/hero.png'
 import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import './App.css'
-import Incidencia from './Incidencia'
-
+import { Login } from './components/login'
 function App() {
   const [count, setCount] = useState(0)
 
@@ -17,12 +16,8 @@ function App() {
           <img src={viteLogo} className="vite" alt="Vite logo" />
         </div>
         <div>
-          <h1>Título para la farmacia pendiente</h1>
-          <Incidencia maquina="Maquina 1" descripcion="No se conecta a la red" />
-          <Incidencia maquina="Maquina 2" descripcion="El capacitor de arranque no funciona" />
-          <Incidencia maquina="Maquina 3" descripcion="No enciende" />
-          
-        </div>
+          <Login />
+          </div>
           <p>
             Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
           </p>
