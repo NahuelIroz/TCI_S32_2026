@@ -1,5 +1,6 @@
 import "./styles.css"
 import { EscanearRepuesto } from "./scanner"
+import ReporteIncidencia from "./reporte_incidencia";
 import { useState } from "react"
 
 export function Login() {
@@ -25,7 +26,13 @@ export function Login() {
 
   if(login){
     return (
-      <EscanearRepuesto />
+      <>
+        <EscanearRepuesto />
+
+        <hr />
+
+        <ReporteIncidencia />
+      </>
     )
   }
 
