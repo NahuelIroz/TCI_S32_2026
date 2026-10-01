@@ -4,6 +4,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from './assets/vite.svg'
 import './App.css'
 import { Login } from './components/login'
+import { EscanearRepuesto } from './components/scanner'
 function App() {
   const [count, setCount] = useState(0)
 
@@ -17,6 +18,9 @@ function App() {
         </div>
         <div>
           <Login />
+          </div>
+          <div>
+            <EscanearRepuesto/>
           </div>
           <p>
             Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
