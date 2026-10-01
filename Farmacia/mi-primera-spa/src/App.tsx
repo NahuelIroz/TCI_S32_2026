@@ -19,9 +19,7 @@ function App() {
         <div>
           <Login />
           </div>
-          <div>
-            <EscanearRepuesto/>
-          </div>
+          
           <p>
             Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
           </p>
