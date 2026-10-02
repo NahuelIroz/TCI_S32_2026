@@ -1,6 +1,5 @@
 import "./styles.css"
-import { EscanearRepuesto } from "./scanner"
-import ReporteIncidencia from "./reporte_incidencia";
+import Home from "./home"
 import { useState } from "react"
 
 export function Login() {
@@ -25,15 +24,7 @@ export function Login() {
   }
 
   if(login){
-    return (
-      <>
-        <EscanearRepuesto />
-
-        <hr />
-
-        <ReporteIncidencia />
-      </>
-    )
+    return <Home />
   }
 
   return (

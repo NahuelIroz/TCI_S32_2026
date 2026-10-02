@@ -1,7 +1,11 @@
 import { useState } from "react";
 import "./styles.css";
 
-function ReporteIncidencia() {
+interface ReporteIncidenciaProps {
+  onBack?: () => void;
+}
+
+function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
   const [maquina, setMaquina] = useState("Compresor 1 (M-001)");
   const [descripcion, setDescripcion] = useState("");
   const [fotos, setFotos] = useState<File[]>([]);
@@ -34,7 +38,7 @@ function ReporteIncidencia() {
         <button
           type="button"
           className="boton-volver"
-          onClick={() => window.history.back()}
+          onClick={onBack ?? (() => window.history.back())}
         >
           ←
         </button>
