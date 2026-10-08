@@ -1,4 +1,4 @@
-import { Login } from './components/login'
+import { Login } from './pages/login'
 
 export default function App() {
   return <Login />
