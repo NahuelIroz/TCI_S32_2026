@@ -573,7 +573,8 @@ body {
 }
 
 .campo select,
-.campo textarea {
+.campo textarea,
+.campo input[type="search"] {
   width: 100%;
   box-sizing: border-box;
   padding: 12px;
@@ -667,4 +668,92 @@ body {
 
     overflow: hidden;
   }
+}
+
+
+/* =========================================
+   MIS INCIDENCIAS
+   Reutiliza .incidencia-container, .incidencia-header,
+   .incidencia-form, .campo y .details-button.
+   ========================================= */
+
+/* El contenedor y el encabezado heredan los estilos
+   de ReporteIncidencia. */
+
+.mis-incidencias .campo input[type="search"]:focus {
+  outline: none;
+  border-color: #20a36a;
+  box-shadow: 0 0 0 2px rgba(32, 163, 106, 0.12);
+}
+
+.mis-filtros {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 4px;
+}
+
+.mis-filtros::-webkit-scrollbar {
+  display: none;
+}
+
+.mis-filtros .filtro {
+  flex-shrink: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 9px 13px;
+  background: #f3f4f6;
+  color: #374151;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mis-filtros .filtro.activo {
+  background: #20a36a;
+  border-color: #20a36a;
+  color: white;
+  font-weight: 600;
+}
+
+.filtro-cantidad {
+  margin-left: 6px;
+  padding: 3px 6px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.mis-sincronizacion {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #dcfce7;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 11px;
+}
+
+.mis-sincronizacion small {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.mis-listado {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mis-listado .inc-card {
+  margin-bottom: 0;
+}
+
+.mis-vacio {
+  padding: 30px 10px;
+  color: #64748b;
+  text-align: center;
+  font-size: 14px;
 }
