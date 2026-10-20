@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import '../App.css'
 import ReporteIncidencia from './reporte_incidencia'
+import MisIncidencias from './MisIncidencias'
 
 type ActionIcon = 'scan' | 'report' | 'stock' | 'incidents'
 
@@ -37,10 +38,21 @@ function NavIcon({ name }: { name: 'home' | 'scan' | 'report' | 'more' }) {
 }
 
 export default function Home() {
-  const [pantalla, setPantalla] = useState<'home' | 'incidencia'>('home')
+  const [pantalla, setPantalla] = useState<
+    'home' | 'incidencia' | 'misIncidencias'
+  >('home')
 
   if (pantalla === 'incidencia') {
     return <ReporteIncidencia onBack={() => setPantalla('home')} />
+  }
+
+  if (pantalla === 'misIncidencias') {
+    return (
+      <MisIncidencias
+        onBack={() => setPantalla('home')}
+        onNuevaIncidencia={() => setPantalla('incidencia')}
+      />
+    )
   }
 
   return (
@@ -97,7 +109,13 @@ export default function Home() {
                 type="button"
                 key={action.title}
                 onClick={() => {
-                  if (action.icon === 'report') setPantalla('incidencia')
+                  if (action.icon === 'report') {
+                    setPantalla('incidencia')
+                  }
+
+                  if (action.icon === 'incidents') {
+                    setPantalla('misIncidencias')
+                  }
                 }}
               >
                 <span className={`action-icon ${action.color}`}><ActionSymbol name={action.icon} /></span>
