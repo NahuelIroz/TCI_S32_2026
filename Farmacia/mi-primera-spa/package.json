@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "mock": "npx @stoplight/prism-cli mock docs/spec/openapi.yaml -p 4010",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"

@@ -1,0 +1,1843 @@
+openapi: 3.0.3
+info:
+  title: Sistema de Gestión de Stock y Mantenimiento de Planta - Mantenimiento Pharma
+  description: |
+    Contrato de API REST para el Sistema de Gestión de Stock y Mantenimiento de Planta en una fábrica farmacéutica.
+    Trabajo de Campo Integrador (TCI) · Desarrollo de Software 2026 · Comisión S32.
+    
+    Núcleo del dominio:
+    - **RN-01**: Descuento automático de stock por escaneo de código (QR / barras) con validación de disponibilidad.
+    - **RN-02**: Alertas automáticas de stock mínimo / umbral.
+    - **RN-03 y RN-04**: Gestión de faltantes y pedidos de compra con urgencia (normal / urgente).
+    - **RN-05 y RN-10**: Ciclo de reservas para mantenimiento preventivo, liberación autorizada y consumo atómico.
+    - **RN-06**: Trazabilidad completa interna del ciclo de vida de cada repuesto.
+    - **RN-07**: Registro de maquinaria y asociación de repuestos requeridos.
+    - **RN-08**: Carga de compras recibidas con ubicación en almacén.
+    - **RN-09**: Notificaciones ante eventos clave (adaptador de correo / Mailhog).
+  version: 0.1.0
+  contact:
+    name: Equipo de desarrollo Mantenimiento Pharma - Comisión S32
+
+servers:
+  - url: http://localhost:4010
+    description: Servidor Mock local (Prism)
+  - url: http://localhost:8000/api/v1
+    description: Backend local de desarrollo (FastAPI)
+
+tags:
+  - name: Autenticación
+    description: Inicio de sesión, perfil de usuario y gestión de tokens.
+  - name: Repuestos
+    description: Catálogo, consulta por escaneo (código QR/barra), búsqueda y reconocimiento por foto.
+  - name: Stock
+    description: Movimientos de inventario, consumos (RN-01), ingresos por compra (RN-08) y alertas (RN-02).
+  - name: Incidencias
+    description: Reporte de fallas en máquinas con fotos y turnos (CU-01), listado y seguimiento de estados.
+  - name: Máquinas
+    description: Equipos de producción (calderas, fraccionadores, bandas transportadoras) y repuestos asociados (RN-07).
+  - name: Reservas
+    description: Reserva de repuestos para mantenimientos preventivos y liberación autorizada (RN-05, RN-10).
+  - name: Compras
+    description: Pedidos de compra y lista de reposición sugerida según umbrales mínimos (RN-03, RN-04, ADR-003).
+  - name: Trazabilidad
+    description: Historial y auditoría de movimientos de cada repuesto (RN-06).
+  - name: Sistema
+    description: Verificación del estado del servicio (Health Check / Walking Skeleton).
+
+paths:
+  /health:
+    get:
+      tags:
+        - Sistema
+      summary: Verificación del estado del servicio (Health Check)
+      description: Endpoint básico utilizado por Docker y herramientas de monitoreo para confirmar la disponibilidad del servicio.
+      operationId: getHealth
+      responses:
+        '200':
+          description: Servicio operativo y en ejecución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                version: "0.1.0"
+                timestamp: "2026-10-19T22:00:00Z"
+
+  /auth/login:
+    post:
+      tags:
+        - Autenticación
+      summary: Iniciar sesión en el sistema
+      description: Permite autenticar operarios, personal de mantenimiento, encargados y gerencia, obteniendo un token JWT.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticación exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "UNAUTHORIZED"
+                mensaje: "Usuario o contraseña incorrectos"
+
+  /auth/me:
+    get:
+      tags:
+        - Autenticación
+      summary: Obtener perfil del usuario autenticado
+      description: Devuelve la información del usuario correspondiente al token JWT provisto en la cabecera Authorization.
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Información del perfil del usuario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Usuario'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /repuestos:
+    get:
+      tags:
+        - Repuestos
+      summary: Consultar catálogo de repuestos e insumos
+      description: Permite buscar y listar repuestos por texto, por máquina asociada o filtrar aquellos cuyo stock está bajo umbral.
+      operationId: listarRepuestos
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          description: Término de búsqueda por código, nombre o descripción técnica.
+          schema:
+            type: string
+          example: "Rodamiento"
+        - name: maquina_codigo
+          in: query
+          required: false
+          description: Filtrar repuestos compatibles con una máquina específica.
+          schema:
+            type: string
+          example: "M-001"
+        - name: bajo_umbral
+          in: query
+          required: false
+          description: Filtrar únicamente repuestos cuyo stock disponible es menor o igual al umbral mínimo (RN-02).
+          schema:
+            type: boolean
+          example: false
+        - name: limit
+          in: query
+          required: false
+          description: Cantidad máxima de registros a devolver.
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          description: Desplazamiento para paginación.
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Lista de repuestos obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaRepuestosResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Repuestos
+      summary: Registrar nuevo repuesto en el catálogo
+      description: Da de alta un nuevo repuesto con su código único, umbral mínimo y ubicación inicial (Rol Encargado / Mantenimiento).
+      operationId: crearRepuesto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RepuestoCreacion'
+      responses:
+        '201':
+          description: Repuesto registrado con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Repuesto'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Ya existe un repuesto con el código indicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "CODIGO_DUPLICADO"
+                mensaje: "Ya existe un repuesto registrado con el código REP-0047"
+
+  /repuestos/{codigo}:
+    get:
+      tags:
+        - Repuestos
+      summary: Obtener ficha técnica de un repuesto por código (Escaneo QR / Barras)
+      description: |
+        Al escanear el código QR o de barras de un envase en la planta, este endpoint devuelve
+        la información completa: existencias físicas, reservas activas, stock disponible,
+        ubicación precisa en depósito y máquinas en las que se utiliza.
+      operationId: obtenerRepuestoPorCodigo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          description: Código único de identificación del repuesto (leído del QR o código de barras).
+          schema:
+            type: string
+          example: "REP-0047"
+      responses:
+        '200':
+          description: Ficha del repuesto encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RepuestoFicha'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          description: Repuesto no encontrado en el catálogo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "REPUESTO_NO_ENCONTRADO"
+                mensaje: "No se encontró ningún repuesto registrado con el código REP-0047"
+
+  /repuestos/identificar-por-foto:
+    post:
+      tags:
+        - Repuestos
+      summary: Reconocer repuesto a partir de una fotografía
+      description: Permite al usuario en planta tomar una foto de una pieza y recibir sugerencias del repuesto correspondiente con su stock y ubicación.
+      operationId: identificarRepuestoPorFoto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - foto
+              properties:
+                foto:
+                  type: string
+                  format: binary
+                  description: Archivo de imagen capturado con la cámara del dispositivo.
+      responses:
+        '200':
+          description: Repuesto reconocido con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IdentificacionFotoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /stock/consumo:
+    post:
+      tags:
+        - Stock
+      summary: Registrar consumo de repuesto por escaneo (RN-01)
+      description: |
+        Descuenta automáticamente la cantidad usada del stock físico al escanear el repuesto
+        para una intervención o máquina.
+        
+        **Reglas aplicadas:**
+        - `cantidad >= 1`
+        - `stockDisponible >= cantidad` (si no, la operación es rechazada con error 409).
+        - Si tras el descuento `stockDisponible <= umbralMinimo`, se activa la alerta de stock bajo (RN-02).
+      operationId: registrarConsumoStock
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConsumoStockRequest'
+      responses:
+        '200':
+          description: Consumo registrado y stock actualizado con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumoStockResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Stock disponible insuficiente para cubrir la cantidad solicitada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error: "STOCK_INSUFICIENTE"
+                mensaje: "No hay suficiente stock disponible para descontar 5 unidades. Stock disponible actual: 2"
+
+  /stock/ingreso:
+    post:
+      tags:
+        - Stock
+      summary: Registrar recepción e ingreso de repuestos al almacén (RN-08)
+      description: Registra el ingreso físico de repuestos al depósito, suma unidades al stock físico y actualiza o ratifica su ubicación.
+      operationId: registrarIngresoStock
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngresoStockRequest'
+      responses:
+        '201':
+          description: Ingreso registrado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngresoStockResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /stock/movimientos:
+    get:
+      tags:
+        - Stock
+        - Trazabilidad
+      summary: Consultar movimientos de inventario (RN-06)
+      description: Lista los movimientos de stock registrados (consumos, ingresos por compras, reservas, liberaciones y ajustes).
+      operationId: listarMovimientosStock
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: codigo_repuesto
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "REP-0047"
+        - name: tipo
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [consumo, ingreso, reserva, liberacion_reserva, ajuste]
+        - name: fecha_desde
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+          example: "2026-10-01"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Lista histórica de movimientos de stock
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MovimientoStock'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /incidencias:
+    get:
+      tags:
+        - Incidencias
+      summary: Listar incidencias reportadas
+      description: Permite consultar el listado de incidencias con filtros por estado, máquina, turno o reportadas por el usuario actual.
+      operationId: listarIncidencias
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [abierta, en_analisis, en_proceso, resuelta, cerrada]
+          example: "abierta"
+        - name: turno
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [Mañana, Tarde, Noche]
+          example: "Mañana"
+        - name: maquina_codigo
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "M-001"
+        - name: solo_mias
+          in: query
+          required: false
+          description: Si es true, filtra solo las incidencias registradas por el usuario autenticado.
+          schema:
+            type: boolean
+          example: false
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Listado de incidencias obtenido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaIncidenciasResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Incidencias
+      summary: Reportar nueva incidencia técnica (CU-01)
+      description: |
+        Permite a un operario o técnico registrar una avería o necesidad de reparación en una máquina,
+        indicando máquina (leída por QR o seleccionada), turno de trabajo, descripción y fotos adjuntas.
+        Notifica a los encargados mediante el adaptador de notificaciones (RN-09).
+      operationId: crearIncidencia
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - maquina_codigo
+                - turno
+                - descripcion
+              properties:
+                maquina_codigo:
+                  type: string
+                  description: Código identificador de la máquina (ej. M-001).
+                  example: "M-001"
+                turno:
+                  type: string
+                  enum: [Mañana, Tarde, Noche]
+                  example: "Mañana"
+                descripcion:
+                  type: string
+                  description: Descripción detallada de la avería o comportamiento anómalo.
+                  example: "Ruidos mecánicos intensos y vibración en el cabezal del compresor principal."
+                prioridad:
+                  type: string
+                  enum: [baja, media, alta, critica]
+                  default: media
+                  example: "alta"
+                fotos:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: Fotografías de evidencia del fallo tomadas desde el celular.
+      responses:
+        '201':
+          description: Incidencia creada y registrada con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incidencia'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /incidencias/{id}:
+    get:
+      tags:
+        - Incidencias
+      summary: Consultar detalle de una incidencia
+      description: Obtiene la información detallada de la incidencia, fotos, estado actual, y repuestos utilizados.
+      operationId: obtenerIncidenciaPorId
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 101
+      responses:
+        '200':
+          description: Detalle de la incidencia
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidenciaDetalle'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /incidencias/{id}/estado:
+    patch:
+      tags:
+        - Incidencias
+      summary: Actualizar estado de una incidencia
+      description: Permite a un encargado o técnico cambiar el estado del reporte (ej. pasar a en_proceso o resuelta).
+      operationId: actualizarEstadoIncidencia
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 101
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CambioEstadoIncidencia'
+      responses:
+        '200':
+          description: Estado actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Incidencia'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /maquinas:
+    get:
+      tags:
+        - Máquinas
+      summary: Listar maquinaria de producción
+      description: Devuelve el listado de máquinas de la planta (calderas, fraccionadores, bandas transportadoras, etc.).
+      operationId: listarMaquinas
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sector
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "Fraccionamiento"
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [operativa, en_mantenimiento, detenida]
+      responses:
+        '200':
+          description: Listado de máquinas obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Maquina'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Máquinas
+      summary: Registrar nueva máquina en planta (RN-07)
+      description: Da de alta un nuevo equipo y asocia la lista de repuestos requeridos a mantener en stock.
+      operationId: registrarMaquina
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaquinaCreacion'
+      responses:
+        '201':
+          description: Máquina registrada con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Maquina'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /maquinas/{codigo}:
+    get:
+      tags:
+        - Máquinas
+      summary: Obtener información de una máquina por código QR/etiqueta
+      description: Devuelve los datos de la máquina, estado operativo y repuestos compatibles asociados.
+      operationId: obtenerMaquinaPorCodigo
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "M-001"
+      responses:
+        '200':
+          description: Información de la máquina encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaquinaDetalle'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /reservas:
+    get:
+      tags:
+        - Reservas
+      summary: Listar reservas de repuestos (RN-05)
+      description: Devuelve la lista de repuestos reservados para mantenimientos preventivos programados.
+      operationId: listarReservas
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [activa, consumida, liberada]
+          default: activa
+      responses:
+        '200':
+          description: Listado de reservas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Reserva'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Reservas
+      summary: Reservar repuestos para mantenimiento preventivo (RN-05)
+      description: |
+        Aparta unidades de un repuesto para una intervención programada.
+        Incrementa `stockReservado` y reduce `stockDisponible` correspondientemente.
+        Requiere rol Encargado.
+      operationId: crearReserva
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservaCreacion'
+      responses:
+        '201':
+          description: Reserva creada con éxito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reserva'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          description: Stock disponible insuficiente para generar la reserva
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /reservas/{id}/liberar:
+    post:
+      tags:
+        - Reservas
+      summary: Liberar reserva de repuestos (RN-05)
+      description: |
+        Libera las unidades reservadas devolviéndolas al stock disponible.
+        Requiere autorización de usuario con rol Encargado y emite aviso inmediato del impacto.
+      operationId: liberarReserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 12
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LiberarReservaRequest'
+      responses:
+        '200':
+          description: Reserva liberada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reserva'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          description: Usuario sin permiso de Encargado para liberar reservas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /reservas/{id}/consumir:
+    post:
+      tags:
+        - Reservas
+      summary: Consumir reserva en ejecución preventiva (RN-10)
+      description: Al ejecutar el mantenimiento preventivo planificado, descuenta el stock físico y libera la reserva en una única transacción atómica.
+      operationId: consumirReserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 12
+      responses:
+        '200':
+          description: Reserva consumida y stock físico descontado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConsumoReservaResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /compras/sugeridas:
+    get:
+      tags:
+        - Compras
+      summary: Consultar lista de compras sugeridas (ADR-003)
+      description: |
+        Vista derivada en tiempo real (no entidad persistida) que consolida los repuestos
+        cuyo `stockDisponible <= umbralMinimo` más requerimientos manuales pendientes.
+      operationId: obtenerComprasSugeridas
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Lista de repuestos que requieren reposición
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ItemCompraSugerida'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /compras/pedidos:
+    get:
+      tags:
+        - Compras
+      summary: Listar pedidos de compra
+      description: Lista los pedidos de compra generados, con estado y grado de urgencia.
+      operationId: listarPedidosCompra
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pendiente, aprobado, entregado, cancelado]
+        - name: urgencia
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [normal, urgente]
+      responses:
+        '200':
+          description: Listado de pedidos de compra
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PedidoCompra'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+    post:
+      tags:
+        - Compras
+      summary: Generar pedido de compra por faltante o previsión (RN-03, RN-04)
+      description: |
+        Materializa una solicitud de compra con grado de urgencia ('normal' o 'urgente').
+        Se notifica automáticamente por correo a los encargados de turnos y gerencia (RN-09).
+      operationId: crearPedidoCompra
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PedidoCompraCreacion'
+      responses:
+        '201':
+          description: Pedido de compra generado y notificado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PedidoCompra'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /compras/pedidos/{id}/estado:
+    patch:
+      tags:
+        - Compras
+      summary: Actualizar estado de un pedido de compra
+      description: Permite aprobar, rechazar o marcar como recibido un pedido de compra.
+      operationId: actualizarEstadoPedidoCompra
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+          example: 5
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - nuevo_estado
+              properties:
+                nuevo_estado:
+                  type: string
+                  enum: [pendiente, aprobado, entregado, cancelado]
+                  example: "aprobado"
+                observacion:
+                  type: string
+                  example: "Aprobado por Gerencia de Planta para compra inmediata."
+      responses:
+        '200':
+          description: Estado del pedido actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PedidoCompra'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+  /trazabilidad/repuestos/{codigo}:
+    get:
+      tags:
+        - Trazabilidad
+      summary: Obtener trazabilidad completa de un repuesto (RN-06)
+      description: |
+        Reconstruye toda la historia interna del repuesto:
+        cuándo se compró, cuándo se recibió en almacén, reservas asignadas y en qué máquinas
+        o reparaciones fue consumido.
+      operationId: obtenerTrazabilidadRepuesto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "REP-0047"
+      responses:
+        '200':
+          description: Trazabilidad reconstruida exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TrazabilidadRepuesto'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT generado al iniciar sesión en /auth/login.
+
+  responses:
+    BadRequestError:
+      description: Datos de entrada inválidos o faltantes
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "DATOS_INVALIDOS"
+            mensaje: "Uno o más campos obligatorios no fueron provistos o no cumplen el formato."
+
+    UnauthorizedError:
+      description: Token ausente, expirado o inválido
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "NO_AUTORIZADO"
+            mensaje: "Se requiere autenticación para acceder a este recurso."
+
+    NotFoundError:
+      description: Recurso no encontrado
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            error: "NO_ENCONTRADO"
+            mensaje: "El recurso solicitado no existe."
+
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - version
+      properties:
+        status:
+          type: string
+          example: "ok"
+        timestamp:
+          type: string
+          format: date-time
+          example: "2026-10-19T22:00:00Z"
+        version:
+          type: string
+          example: "0.1.0"
+
+    LoginRequest:
+      type: object
+      required:
+        - usuario
+        - password
+      properties:
+        usuario:
+          type: string
+          description: Nombre de usuario o legajo.
+          example: "admin"
+        password:
+          type: string
+          format: password
+          description: Contraseña de acceso.
+          example: "1234"
+
+    LoginResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - usuario
+      properties:
+        access_token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        token_type:
+          type: string
+          example: "bearer"
+        usuario:
+          $ref: '#/components/schemas/Usuario'
+
+    Usuario:
+      type: object
+      required:
+        - id
+        - username
+        - nombre
+        - rol
+        - turno
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: "jperez"
+        nombre:
+          type: string
+          example: "Juan Pérez"
+        rol:
+          type: string
+          enum: [operario, mantenimiento, encargado, gerencia]
+          example: "operario"
+        turno:
+          type: string
+          enum: [Mañana, Tarde, Noche]
+          example: "Mañana"
+
+    Ubicacion:
+      type: object
+      required:
+        - codigo
+      properties:
+        codigo:
+          type: string
+          description: Código alfanumérico identificador de ubicación en el depósito.
+          example: "PAS-02-EST-04-NIV-1"
+        descripcion:
+          type: string
+          description: Descripción comprensible (pasillo, estantería, estante o caja).
+          example: "Pasillo 2, Estantería 4, Estante A"
+
+    Repuesto:
+      type: object
+      required:
+        - codigo
+        - nombre
+        - descripcion
+        - stockActual
+        - stockReservado
+        - stockDisponible
+        - stockMinimo
+        - ubicacion
+      properties:
+        codigo:
+          type: string
+          description: Código único QR o de barras del repuesto.
+          example: "REP-0047"
+        nombre:
+          type: string
+          example: "Rodamiento 6205"
+        descripcion:
+          type: string
+          example: "Rodamiento rígido de una hilera de bolas con obturación en ambos lados."
+        stockActual:
+          type: integer
+          description: Stock físico total en depósito (debe ser >= 0).
+          example: 12
+        stockReservado:
+          type: integer
+          description: Cantidad retenida para mantenimientos preventivos activos.
+          example: 2
+        stockDisponible:
+          type: integer
+          description: Stock utilizable calculado como (stockActual - stockReservado).
+          example: 10
+        stockMinimo:
+          type: integer
+          description: Umbral mínimo que dispara alertas de reposición (RN-02).
+          example: 5
+        bajoUmbral:
+          type: boolean
+          description: Indica si stockDisponible <= stockMinimo.
+          example: false
+        ubicacion:
+          $ref: '#/components/schemas/Ubicacion'
+        imagen_url:
+          type: string
+          nullable: true
+          example: "/repuesto.jpg"
+
+    RepuestoFicha:
+      allOf:
+        - $ref: '#/components/schemas/Repuesto'
+        - type: object
+          properties:
+            maquinasCompatibles:
+              type: array
+              items:
+                $ref: '#/components/schemas/MaquinaResumen'
+              example:
+                - codigo: "M-001"
+                  nombre: "Compresor 1"
+                - codigo: "M-002"
+                  nombre: "Compresor 2"
+                - codigo: "M-003"
+                  nombre: "Bomba hidráulica"
+
+    RepuestoCreacion:
+      type: object
+      required:
+        - codigo
+        - nombre
+        - descripcion
+        - stockInicial
+        - stockMinimo
+        - ubicacion_codigo
+      properties:
+        codigo:
+          type: string
+          example: "REP-0048"
+        nombre:
+          type: string
+          example: "Sello mecánico 25mm"
+        descripcion:
+          type: string
+          example: "Sello de grafito/carburo de silicio para bomba centrífuga."
+        stockInicial:
+          type: integer
+          minimum: 0
+          example: 8
+        stockMinimo:
+          type: integer
+          minimum: 1
+          example: 3
+        ubicacion_codigo:
+          type: string
+          example: "PAS-01-EST-02"
+        ubicacion_descripcion:
+          type: string
+          example: "Pasillo 1, Bandeja 2"
+        maquinas_compatibles:
+          type: array
+          items:
+            type: string
+          example: ["M-001", "M-003"]
+
+    ListaRepuestosResponse:
+      type: object
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Repuesto'
+        total:
+          type: integer
+          example: 1
+
+    IdentificacionFotoResponse:
+      type: object
+      required:
+        - repuesto
+        - confianza
+      properties:
+        confianza:
+          type: number
+          format: float
+          description: Grado de certeza de la coincidencia visual (0 a 1).
+          example: 0.94
+        repuesto:
+          $ref: '#/components/schemas/RepuestoFicha'
+
+    ConsumoStockRequest:
+      type: object
+      required:
+        - codigo_repuesto
+        - cantidad
+      properties:
+        codigo_repuesto:
+          type: string
+          description: Código del repuesto leído por QR o código de barras.
+          example: "REP-0047"
+        cantidad:
+          type: integer
+          minimum: 1
+          description: Cantidad entera >= 1 a descontar del stock físico.
+          example: 1
+        maquina_codigo:
+          type: string
+          nullable: true
+          description: Código de la máquina donde se instala el repuesto.
+          example: "M-001"
+        incidencia_id:
+          type: integer
+          nullable: true
+          description: Identificador de la incidencia asociada si corresponde.
+          example: 101
+        motivo:
+          type: string
+          example: "Reemplazo preventivo por juego axial excesivo."
+
+    ConsumoStockResponse:
+      type: object
+      required:
+        - mensaje
+        - repuesto_codigo
+        - cantidad_descontada
+        - stock_fisico_restante
+        - stock_disponible_restante
+        - alerta_umbral_activada
+        - movimiento_id
+      properties:
+        mensaje:
+          type: string
+          example: "Consumo registrado correctamente"
+        repuesto_codigo:
+          type: string
+          example: "REP-0047"
+        cantidad_descontada:
+          type: integer
+          example: 1
+        stock_fisico_restante:
+          type: integer
+          example: 11
+        stock_disponible_restante:
+          type: integer
+          example: 9
+        alerta_umbral_activada:
+          type: boolean
+          description: True si el stock disponible quedó igual o menor al umbral mínimo (RN-02).
+          example: false
+        movimiento_id:
+          type: integer
+          example: 845
+
+    IngresoStockRequest:
+      type: object
+      required:
+        - codigo_repuesto
+        - cantidad
+      properties:
+        codigo_repuesto:
+          type: string
+          example: "REP-0047"
+        cantidad:
+          type: integer
+          minimum: 1
+          example: 10
+        ubicacion_codigo:
+          type: string
+          nullable: true
+          example: "PAS-02-EST-04-NIV-1"
+        pedido_compra_id:
+          type: integer
+          nullable: true
+          example: 5
+        remito:
+          type: string
+          example: "REM-2026-904"
+
+    IngresoStockResponse:
+      type: object
+      required:
+        - mensaje
+        - repuesto_codigo
+        - cantidad_ingresada
+        - nuevo_stock_fisico
+        - nuevo_stock_disponible
+      properties:
+        mensaje:
+          type: string
+          example: "Ingreso de stock procesado correctamente"
+        repuesto_codigo:
+          type: string
+          example: "REP-0047"
+        cantidad_ingresada:
+          type: integer
+          example: 10
+        nuevo_stock_fisico:
+          type: integer
+          example: 22
+        nuevo_stock_disponible:
+          type: integer
+          example: 20
+
+    MovimientoStock:
+      type: object
+      required:
+        - id
+        - fecha
+        - tipo
+        - codigo_repuesto
+        - cantidad
+        - usuario
+      properties:
+        id:
+          type: integer
+          example: 845
+        fecha:
+          type: string
+          format: date-time
+          example: "2026-10-19T14:32:00Z"
+        tipo:
+          type: string
+          enum: [consumo, ingreso, reserva, liberacion_reserva, ajuste]
+          example: "consumo"
+        codigo_repuesto:
+          type: string
+          example: "REP-0047"
+        cantidad:
+          type: integer
+          example: 1
+        usuario:
+          type: string
+          example: "jperez"
+        referencia:
+          type: string
+          example: "Máquina M-001 (Compresor 1)"
+
+    Incidencia:
+      type: object
+      required:
+        - id
+        - codigo_maquina
+        - maquina_nombre
+        - turno
+        - descripcion
+        - estado
+        - fecha_reporte
+        - usuario_reportante
+      properties:
+        id:
+          type: integer
+          example: 101
+        codigo_maquina:
+          type: string
+          example: "M-001"
+        maquina_nombre:
+          type: string
+          example: "Compresor 1 (M-001)"
+        turno:
+          type: string
+          enum: [Mañana, Tarde, Noche]
+          example: "Mañana"
+        descripcion:
+          type: string
+          example: "Ruidos mecánicos intensos y vibración en el cabezal del compresor principal."
+        prioridad:
+          type: string
+          enum: [baja, media, alta, critica]
+          example: "alta"
+        estado:
+          type: string
+          enum: [abierta, en_analisis, en_proceso, resuelta, cerrada]
+          example: "abierta"
+        fotos:
+          type: array
+          items:
+            type: string
+          example:
+            - "/fotos/incidencias/101_1.jpg"
+        fecha_reporte:
+          type: string
+          format: date-time
+          example: "2026-10-19T09:15:00Z"
+        usuario_reportante:
+          type: string
+          example: "Juan Pérez"
+
+    IncidenciaDetalle:
+      allOf:
+        - $ref: '#/components/schemas/Incidencia'
+        - type: object
+          properties:
+            historial_estados:
+              type: array
+              items:
+                type: object
+                properties:
+                  estado:
+                    type: string
+                  fecha:
+                    type: string
+                    format: date-time
+                  usuario:
+                    type: string
+                  comentario:
+                    type: string
+            repuestos_utilizados:
+              type: array
+              items:
+                type: object
+                properties:
+                  codigo_repuesto:
+                    type: string
+                  nombre:
+                    type: string
+                  cantidad:
+                    type: integer
+
+    ListaIncidenciasResponse:
+      type: object
+      required:
+        - items
+        - total
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incidencia'
+        total:
+          type: integer
+          example: 1
+
+    CambioEstadoIncidencia:
+      type: object
+      required:
+        - nuevo_estado
+      properties:
+        nuevo_estado:
+          type: string
+          enum: [abierta, en_analisis, en_proceso, resuelta, cerrada]
+          example: "en_proceso"
+        comentario:
+          type: string
+          example: "Iniciando desmontaje del cabezal para verificar cojinetes."
+
+    MaquinaResumen:
+      type: object
+      required:
+        - codigo
+        - nombre
+      properties:
+        codigo:
+          type: string
+          example: "M-001"
+        nombre:
+          type: string
+          example: "Compresor 1"
+
+    Maquina:
+      type: object
+      required:
+        - codigo
+        - nombre
+        - tipo
+        - sector
+        - estado
+      properties:
+        codigo:
+          type: string
+          description: Código único QR o de etiqueta de la máquina.
+          example: "M-001"
+        nombre:
+          type: string
+          example: "Compresor 1 (M-001)"
+        tipo:
+          type: string
+          example: "Compresor de tornillo"
+        sector:
+          type: string
+          example: "Servicios Generales"
+        ejemplar:
+          type: integer
+          example: 1
+        estado:
+          type: string
+          enum: [operativa, en_mantenimiento, detenida]
+          example: "operativa"
+
+    MaquinaDetalle:
+      allOf:
+        - $ref: '#/components/schemas/Maquina'
+        - type: object
+          properties:
+            repuestos_asociados:
+              type: array
+              items:
+                $ref: '#/components/schemas/Repuesto'
+
+    MaquinaCreacion:
+      type: object
+      required:
+        - codigo
+        - nombre
+        - tipo
+        - sector
+      properties:
+        codigo:
+          type: string
+          example: "M-004"
+        nombre:
+          type: string
+          example: "Fraccionadora de Comprimidos 2"
+        tipo:
+          type: string
+          example: "Fraccionadora rotativa"
+        sector:
+          type: string
+          example: "Producción - Envasado"
+        ejemplar:
+          type: integer
+          default: 1
+          example: 2
+        repuestos_requeridos_codigos:
+          type: array
+          items:
+            type: string
+          example: ["REP-0047", "REP-0048"]
+
+    Reserva:
+      type: object
+      required:
+        - id
+        - codigo_repuesto
+        - repuesto_nombre
+        - cantidad
+        - motivo
+        - estado
+        - fecha_reserva
+        - autorizada_por
+      properties:
+        id:
+          type: integer
+          example: 12
+        codigo_repuesto:
+          type: string
+          example: "REP-0047"
+        repuesto_nombre:
+          type: string
+          example: "Rodamiento 6205"
+        cantidad:
+          type: integer
+          example: 2
+        motivo:
+          type: string
+          example: "Mantenimiento preventivo quincenal programado para Caldera 1."
+        estado:
+          type: string
+          enum: [activa, consumida, liberada]
+          example: "activa"
+        fecha_reserva:
+          type: string
+          format: date-time
+          example: "2026-10-18T10:00:00Z"
+        autorizada_por:
+          type: string
+          example: "supervisor_mantenimiento"
+
+    ReservaCreacion:
+      type: object
+      required:
+        - codigo_repuesto
+        - cantidad
+        - motivo
+      properties:
+        codigo_repuesto:
+          type: string
+          example: "REP-0047"
+        cantidad:
+          type: integer
+          minimum: 1
+          example: 2
+        motivo:
+          type: string
+          example: "Mantenimiento preventivo quincenal programado para Caldera 1."
+
+    LiberarReservaRequest:
+      type: object
+      required:
+        - motivo_liberacion
+      properties:
+        motivo_liberacion:
+          type: string
+          example: "Urgencia en Línea 1 Fraccionamiento, autorización verbal de Encargado de Turno."
+
+    ConsumoReservaResponse:
+      type: object
+      required:
+        - mensaje
+        - reserva_id
+        - codigo_repuesto
+        - cantidad_consumida
+        - nuevo_stock_fisico
+        - nuevo_stock_disponible
+      properties:
+        mensaje:
+          type: string
+          example: "Reserva consumida y stock físico descontado en una sola transacción."
+        reserva_id:
+          type: integer
+          example: 12
+        codigo_repuesto:
+          type: string
+          example: "REP-0047"
+        cantidad_consumida:
+          type: integer
+          example: 2
+        nuevo_stock_fisico:
+          type: integer
+          example: 10
+        nuevo_stock_disponible:
+          type: integer
+          example: 10
+
+    ItemCompraSugerida:
+      type: object
+      required:
+        - codigo_repuesto
+        - nombre
+        - stockActual
+        - stockDisponible
+        - stockMinimo
+        - deficit
+        - cantidad_sugerida
+      properties:
+        codigo_repuesto:
+          type: string
+          example: "REP-0047"
+        nombre:
+          type: string
+          example: "Rodamiento 6205"
+        stockActual:
+          type: integer
+          example: 4
+        stockDisponible:
+          type: integer
+          example: 4
+        stockMinimo:
+          type: integer
+          example: 6
+        deficit:
+          type: integer
+          description: Unidades faltantes para alcanzar el stock mínimo.
+          example: 2
+        cantidad_sugerida:
+          type: integer
+          description: Cantidad sugerida a comprar para reabastecer el nivel seguro.
+          example: 10
+
+    ItemPedidoCompra:
+      type: object
+      required:
+        - codigo_repuesto
+        - cantidad
+      properties:
+        codigo_repuesto:
+          type: string
+          example: "REP-0047"
+        cantidad:
+          type: integer
+          minimum: 1
+          example: 10
+
+    PedidoCompraCreacion:
+      type: object
+      required:
+        - items
+        - urgencia
+      properties:
+        urgencia:
+          type: string
+          enum: [normal, urgente]
+          example: "urgente"
+        motivo:
+          type: string
+          example: "Rotura imprevista y stock en cero para Compresor 1."
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ItemPedidoCompra'
+
+    PedidoCompra:
+      type: object
+      required:
+        - id
+        - fecha_creacion
+        - urgencia
+        - estado
+        - creado_por
+        - items
+      properties:
+        id:
+          type: integer
+          example: 5
+        fecha_creacion:
+          type: string
+          format: date-time
+          example: "2026-10-19T11:20:00Z"
+        urgencia:
+          type: string
+          enum: [normal, urgente]
+          example: "urgente"
+        estado:
+          type: string
+          enum: [pendiente, aprobado, entregado, cancelado]
+          example: "pendiente"
+        motivo:
+          type: string
+          example: "Rotura imprevista y stock en cero para Compresor 1."
+        creado_por:
+          type: string
+          example: "jperez"
+        items:
+          type: array
+          items:
+            type: object
+            required:
+              - codigo_repuesto
+              - nombre_repuesto
+              - cantidad
+            properties:
+              codigo_repuesto:
+                type: string
+                example: "REP-0047"
+              nombre_repuesto:
+                type: string
+                example: "Rodamiento 6205"
+              cantidad:
+                type: integer
+                example: 10
+
+    TrazabilidadRepuesto:
+      type: object
+      required:
+        - codigo_repuesto
+        - nombre
+        - linea_de_tiempo
+      properties:
+        codigo_repuesto:
+          type: string
+          example: "REP-0047"
+        nombre:
+          type: string
+          example: "Rodamiento 6205"
+        stock_actual:
+          type: integer
+          example: 12
+        linea_de_tiempo:
+          type: array
+          items:
+            type: object
+            required:
+              - fecha
+              - tipo_evento
+              - descripcion
+              - usuario
+            properties:
+              fecha:
+                type: string
+                format: date-time
+                example: "2026-10-01T08:00:00Z"
+              tipo_evento:
+                type: string
+                enum: [compra, recepcion_stock, reserva_preventivo, liberacion_reserva, consumo_reparacion]
+                example: "recepcion_stock"
+              descripcion:
+                type: string
+                example: "Ingreso de 10 unidades según Remito REM-2026-904. Ubicación asignada: PAS-02-EST-04-NIV-1."
+              usuario:
+                type: string
+                example: "supervisor_almacen"
+              maquina_asociada:
+                type: string
+                nullable: true
+                example: null
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - mensaje
+      properties:
+        error:
+          type: string
+          description: Código identificador del error.
+          example: "DATOS_INVALIDOS"
+        mensaje:
+          type: string
+          description: Detalle en lenguaje natural explicando el motivo del error.
+          example: "La cantidad especificada debe ser un entero mayor o igual a 1."
+        detalles:
+          type: array
+          items:
+            type: string
+          nullable: true
+          example: ["El campo 'cantidad' no puede ser 0 o negativo."]
