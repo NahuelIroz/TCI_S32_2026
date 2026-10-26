@@ -1,0 +1,105 @@
+
+.inc-card {
+  background: #ffffff;
+  border: 1px solid #edf0f5;
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.025);
+}
+
+.inc-card-superior {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.inc-codigo {
+  background: #e8edff;
+  color: #007b31;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 7px;
+  border-radius: 4px;
+}
+
+.inc-fecha {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.inc-estado {
+  margin-left: auto;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.estado-pendiente {
+  background: #ffead0;
+  color: #a15c00;
+}
+
+.estado-en-reparación {
+  background: #dfe7ff;
+  color: #263d96;
+}
+
+.estado-resuelto {
+  background: #b9f7d7;
+  color: #006e3c;
+}
+
+.inc-card-titulo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.inc-card-titulo h3 {
+  font-size: 14px;
+  color: #0f172a;
+  margin: 0;
+}
+
+.inc-card-titulo small {
+  font-size: 10px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.inc-descripcion {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #475569;
+  margin: 8px 0 14px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.inc-card-footer {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 4px 0;
+  border-top: 1px solid #eef0f6;
+  font-size: 11px;
+  color: #475569;
+}
+
+.inc-card-footer button {
+  margin-left: auto;
+  border: none;
+  background: transparent;
+  color: #007b21;
+  font-weight: 700;
+  cursor: pointer;
+}
