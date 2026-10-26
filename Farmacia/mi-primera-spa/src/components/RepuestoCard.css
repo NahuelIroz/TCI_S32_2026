@@ -1,0 +1,116 @@
+
+.repuesto-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.repuesto-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.repuesto-codigo {
+  font-size: 11px;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.repuesto-estado {
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.repuesto-estado.disponible {
+  background: #bbf7d0;
+  color: #166534;
+}
+
+.repuesto-estado.bajo {
+  background: #fed7aa;
+  color: #9a3412;
+}
+
+.repuesto-estado.agotado {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+.repuesto-nombre {
+  margin: 14px 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #17324d;
+  line-height: 1.4;
+}
+
+.repuesto-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 10px;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 12px;
+}
+
+.repuesto-cantidades {
+  display: flex;
+  gap: 20px;
+}
+
+.repuesto-cantidades small {
+  font-size: 10px;
+  color: #64748b;
+}
+
+.repuesto-cantidades p {
+  margin: 5px 0 0;
+  font-size: 11px;
+  color: #374151;
+}
+
+.repuesto-cantidades strong {
+  font-size: 17px;
+  color: #17324d;
+}
+
+.repuesto-cantidades .disponible strong {
+  color: #008000;
+}
+
+.repuesto-cantidades .bajo strong {
+  color: #b45309;
+}
+
+.repuesto-cantidades .agotado strong {
+  color: #dc2626;
+}
+
+.repuesto-comprar {
+  border: none;
+  border-radius: 8px;
+  background: #007b0c;
+  color: white;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.repuesto-comprar:hover {
+  background: #006309;
+}
+
+.repuesto-comprar:disabled {
+  background: #e5e7eb;
+  color: #94a3b8;
+  cursor: not-allowed;
+}
