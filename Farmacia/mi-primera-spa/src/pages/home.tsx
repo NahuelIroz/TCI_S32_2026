@@ -5,13 +5,15 @@ import "../App.css";
 import ReporteIncidencia from "./reporte_incidencia";
 import MisIncidencias from "./MisIncidencias";
 import ConsultarStock from "./ConsultarStock";
+import EscanearQR from "./scanner";
 
 // Pantallas disponibles en la aplicación
 type Pantalla =
   | "home"
   | "incidencia"
   | "misIncidencias"
-  | "stock";
+  | "stock"
+  | "scan";
 
 // Tipos de acciones del Home
 type ActionIcon = "scan" | "report" | "stock" | "incidents";
@@ -154,14 +156,11 @@ export default function Home() {
         break;
 
       case "scan":
-        alert("Escanear repuesto: pendiente de implementar");
+        setPantalla("scan");
         break;
     }
   };
 
-  // ========================================
-  // PANTALLA: REPORTAR INCIDENCIA
-  // ========================================
   if (pantalla === "incidencia") {
     return (
       <ReporteIncidencia
@@ -170,9 +169,7 @@ export default function Home() {
     );
   }
 
-  // ========================================
-  // PANTALLA: MIS INCIDENCIAS
-  // ========================================
+  
   if (pantalla === "misIncidencias") {
     return (
       <MisIncidencias
@@ -182,9 +179,7 @@ export default function Home() {
     );
   }
 
-  // ========================================
-  // PANTALLA: CONSULTAR STOCK
-  // ========================================
+ 
   if (pantalla === "stock") {
     return (
       <ConsultarStock
@@ -194,8 +189,17 @@ export default function Home() {
   }
 
   // ========================================
-  // PANTALLA PRINCIPAL: HOME
+  // PANTALLA: ESCANEAR QR
   // ========================================
+  if (pantalla === "scan") {
+    return (
+      <EscanearQR
+        onBack={() => setPantalla("home")}
+      />
+    );
+  }
+
+  
   return (
     <div className="pharma-app">
 
@@ -225,6 +229,17 @@ export default function Home() {
             href="#inicio"
           >
             Inicio
+          </a>
+
+          <a
+            className="nav-link"
+            href="#scanner"
+            onClick={(event) => {
+              event.preventDefault();
+              setPantalla("scan");
+            }}
+          >
+            Escanear
           </a>
 
           <a
@@ -300,7 +315,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ACCIONES PRINCIPALES */}
         <section
           id="acciones"
           className="quick-actions"
@@ -318,7 +332,6 @@ export default function Home() {
             </span>
           </div>
 
-          {/* TARJETAS */}
           <div className="action-grid">
 
             {actions.map((action) => (
@@ -355,7 +368,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* FOOTER */}
         <footer className="dashboard-footer">
           <span>
             <span className="footer-cross">+</span>
@@ -365,7 +377,6 @@ export default function Home() {
 
       </main>
 
-      {/* NAVEGACIÓN INFERIOR PARA MÓVILES */}
       <nav
         className="mobile-nav"
         aria-label="Navegación inferior"
