@@ -1,37 +1,72 @@
-import "./styles.css"
-import Home from "./home"
-import { useState } from "react"
+import "./styles.css";
+import Home from "./home";
+import { useState } from "react";
+import { PERFILES, type PerfilUsuario } from "../auth/permisos";
 
 export function Login() {
-  const [usuario, setUsuario] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState(false)
-  const [login, setLogin] = useState(false) 
+  const [usuario, setUsuario] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMensaje, setErrorMensaje] = useState("");
+  const [perfilActivo, setPerfilActivo] = useState<PerfilUsuario | null>(null);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
 
-    if (usuario === "admin" && password === "1234") {
-      setError(false)
-      setLogin(true)
+    const u = usuario.trim().toLowerCase();
+    const p = password.trim();
 
-      console.log("Login correcto")
-
-      
-    } else {
-      setError(true)
-      console.log("Login incorrecto")
+    if (!u && !p) {
+      setErrorMensaje("Por favor, ingresá usuario y contraseña.");
+      return;
     }
-  }
 
-  if(login){
-    return <Home />
+    if (!u) {
+      setErrorMensaje("Por favor, ingresá tu usuario.");
+      return;
+    }
+
+    if (!p) {
+      setErrorMensaje("Por favor, ingresá tu contraseña.");
+      return;
+    }
+
+    if (p !== "1234") {
+      setErrorMensaje("Contraseña incorrecta.");
+      return;
+    }
+
+    if (u === "mantenimiento" || u === "admin") {
+      setErrorMensaje("");
+      setPerfilActivo(PERFILES.mantenimiento);
+      return;
+    }
+
+    if (u === "operario") {
+      setErrorMensaje("");
+      setPerfilActivo(PERFILES.operario);
+      return;
+    }
+
+    setErrorMensaje("Usuario no válido. Los usuarios registrados son 'operario' y 'mantenimiento'.");
+  };
+
+  if (perfilActivo) {
+    return (
+      <Home
+        usuario={perfilActivo}
+        onCerrarSesion={() => {
+          setPerfilActivo(null);
+          setUsuario("");
+          setPassword("");
+          setErrorMensaje("");
+        }}
+      />
+    );
   }
 
   return (
     <main className="login-container">
       <div className="login">
-
         <div className="login-logo">
           <svg viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="45" fill="#2bb673" />
@@ -55,58 +90,44 @@ export function Login() {
         </div>
 
         <h1>Farmacia</h1>
-
         <p>Ingresá al sistema de gestión</p>
 
         <form onSubmit={handleSubmit}>
-
-          <label htmlFor="usuario">
-            Usuario
-          </label>
-
+          <label htmlFor="usuario">Usuario</label>
           <input
             id="usuario"
             type="text"
-            placeholder="Ingresá tu usuario"
+            placeholder="operario o mantenimiento"
             value={usuario}
             onChange={(e) => {
-              setUsuario(e.target.value)
-              setError(false)
+              setUsuario(e.target.value);
+              setErrorMensaje("");
             }}
           />
 
-          <label htmlFor="password">
-            Contraseña
-          </label>
-
+          <label htmlFor="password">Contraseña</label>
           <input
             id="password"
             type="password"
             placeholder="Ingresá tu contraseña"
             value={password}
             onChange={(e) => {
-              setPassword(e.target.value)
-              setError(false)
+              setPassword(e.target.value);
+              setErrorMensaje("");
             }}
           />
 
-          {error && (
-            <p className="error">
-              Usuario o contraseña incorrectos
+          {errorMensaje && (
+            <p className="error" role="alert">
+              {errorMensaje}
             </p>
           )}
 
-          <button type="submit">
-            Ingresar
-          </button>
+          <button type="submit">Ingresar</button>
 
-          <a href="#">
-            ¿Olvidaste tu contraseña?
-          </a>
-
+          <a href="#">¿Olvidaste tu contraseña?</a>
         </form>
-
       </div>
     </main>
-  )
+  );
 }

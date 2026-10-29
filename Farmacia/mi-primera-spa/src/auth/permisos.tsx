@@ -52,10 +52,6 @@ export function tienePermiso(
   return permisosPorRol[rol].includes(permiso);
 }
 
-/* ==========================================================================
-   PERFILES DE USUARIO
-   ========================================================================== */
-
 export interface PerfilUsuario {
   id: string;
   usuario: string;
@@ -100,9 +96,6 @@ export const PERFILES: Record<string, PerfilUsuario> = {
   },
 };
 
-/* ==========================================================================
-   ACCIONES DEL SISTEMA SEGÚN PERFIL Y PERMISOS
-   ========================================================================== */
 
 export type TipoIconoAccion =
   | "stock-in"
@@ -152,7 +145,6 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
     ];
   }
 
-  // MANTENIMIENTO: las 5 actividades del perfil
   return [
     {
       id: "ingresar-stock",

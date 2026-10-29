@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 import { repuestos, type Repuesto } from "../data/repuestos";
-import "./scannerQR.css";
+import "./styles.css";
 
 interface EscanearQRProps {
   onBack?: () => void;
