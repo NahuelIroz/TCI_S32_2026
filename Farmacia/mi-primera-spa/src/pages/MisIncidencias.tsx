@@ -20,7 +20,6 @@ function MisIncidencias({
   onBack,
 }: MisIncidenciasProps) {
 
-  // Estados del buscador y los filtros
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("Todas");
 
@@ -32,7 +31,6 @@ function MisIncidencias({
     "Resuelto",
   ];
 
-  // Filtrar incidencias por estado y texto
   const incidenciasFiltradas = incidencias.filter((inc) => {
 
     const coincideEstado =
@@ -84,8 +82,6 @@ function MisIncidencias({
           />
 
         </div>
-
-        {/* FILTROS POR ESTADO */}
         <div
           className="mis-filtros"
           aria-label="Filtrar incidencias por estado"

@@ -1,5 +1,12 @@
 import { useState } from "react";
 import { repuestos, type Repuesto } from "../data/repuestos";
+import {
+  pedidosCompraIniciales,
+  type PedidoCompraItem,
+  type PrioridadPedido,
+} from "../data/pedidosCompraData";
+import { servicioNotificaciones } from "../services/notificacionesService";
+import { trazabilidadInicial } from "../data/trazabilidadData";
 import "./styles.css";
 
 interface PedidosCompraProps {
@@ -7,20 +14,7 @@ interface PedidosCompraProps {
   repuestoInicial?: Repuesto;
 }
 
-interface PedidoCompra {
-  id: string;
-  codigo: string;
-  repuestoNombre: string;
-  cantidad: number;
-  unidad: string;
-  prioridad: "Baja" | "Media" | "Urgente";
-  justificacion: string;
-  estado: "Pendiente de aprobación" | "En cotización" | "Aprobado";
-  fecha: string;
-}
-
 export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompraProps) {
-  // Lista de repuestos que tienen stock bajo o agotado
   const repuestosCriticos = repuestos.filter(
     (r) => r.disponible <= r.minimo
   );
@@ -28,37 +22,20 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
   const [repuestoId, setRepuestoId] = useState<number>(
     repuestoInicial?.id ?? repuestosCriticos[0]?.id ?? repuestos[0]?.id ?? 1
   );
-  const [cantidad, setCantidad] = useState<number>(10);
-  const [prioridad, setPrioridad] = useState<"Baja" | "Media" | "Urgente">("Media");
+  const [cantidad, setCantidad] = useState<number>(
+    repuestoInicial ? Math.max(repuestoInicial.minimo * 2 - repuestoInicial.disponible, 5) : 10
+  );
+  const [prioridad, setPrioridad] = useState<PrioridadPedido>(
+    repuestoInicial?.disponible === 0 ? "Urgente" : "Media"
+  );
   const [justificacion, setJustificacion] = useState<string>(
-    "Stock por debajo del mínimo de seguridad para mantenimiento preventivo."
+    repuestoInicial
+      ? `Faltante detectado (RN-03): Stock físico en ${repuestoInicial.disponible} ${repuestoInicial.unidad} sobre umbral mínimo de ${repuestoInicial.minimo} ${repuestoInicial.unidad}.`
+      : "Stock por debajo del mínimo de seguridad para mantenimiento preventivo."
   );
   const [mensajeExito, setMensajeExito] = useState<string>("");
 
-  const [pedidos, setPedidos] = useState<PedidoCompra[]>([
-    {
-      id: "PED-2026-012",
-      codigo: "SKU-COR-900",
-      repuestoNombre: "Correa Dentada Sincrónica 8M",
-      cantidad: 5,
-      unidad: "unid.",
-      prioridad: "Urgente",
-      justificacion: "Stock agotado (0 unid.), requerida para compresores principales.",
-      estado: "Pendiente de aprobación",
-      fecha: "Ayer",
-    },
-    {
-      id: "PED-2026-011",
-      codigo: "SKU-VLV-420",
-      repuestoNombre: "Válvula Solenoide Festo 24V DC 5/2",
-      cantidad: 10,
-      unidad: "unid.",
-      prioridad: "Media",
-      justificacion: "Stock crítico (2 unid. restantes sobre mínimo de 5).",
-      estado: "En cotización",
-      fecha: "26/10/2026",
-    },
-  ]);
+  const [pedidos, setPedidos] = useState<PedidoCompraItem[]>(pedidosCompraIniciales);
 
   const repuestoActual = repuestos.find((r) => r.id === repuestoId);
 
@@ -68,7 +45,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
     setCantidad(sugerido);
     setPrioridad(rep.disponible === 0 ? "Urgente" : "Media");
     setJustificacion(
-      `Faltante detectado: stock actual de ${rep.disponible} ${rep.unidad} (mínimo de seguridad: ${rep.minimo} ${rep.unidad}).`
+      `Faltante detectado (RN-03): stock actual de ${rep.disponible} ${rep.unidad} (mínimo de seguridad: ${rep.minimo} ${rep.unidad}).`
     );
     setMensajeExito("");
   };
@@ -82,7 +59,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
       return;
     }
 
-    const nuevoPedido: PedidoCompra = {
+    const nuevoPedido: PedidoCompraItem = {
       id: `PED-2026-0${pedidos.length + 13}`,
       codigo: repuestoActual.codigo,
       repuestoNombre: repuestoActual.nombre,
@@ -92,11 +69,45 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
       justificacion,
       estado: "Pendiente de aprobación",
       fecha: "Hoy",
+      solicitante: "Carlos Gómez (Mantenimiento)",
+      montoEstimado: cantidad * 12500,
+      proveedor: "Proveedor Homologado Planta",
+      notificacionLeida: false,
     };
 
     setPedidos([nuevoPedido, ...pedidos]);
+    pedidosCompraIniciales.unshift(nuevoPedido);
+
+    // RN-06: Trazabilidad interna
+    trazabilidadInicial.push({
+      id: `TRZ-0${trazabilidadInicial.length + 10}`,
+      repuestoCodigo: repuestoActual.codigo,
+      repuestoNombre: repuestoActual.nombre,
+      tipo: "compra",
+      titulo: `Solicitud de Compra ${prioridad === "Urgente" ? "(Urgente)" : ""}`,
+      fecha: new Date().toLocaleDateString("es-AR") + " " + new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+      referencia: nuevoPedido.id,
+      cantidad,
+      unidad: repuestoActual.unidad,
+      usuario: "Carlos Gómez (Mantenimiento)",
+      detalles: `Pedido generado por faltante / umbral (RN-03). Justificación: ${justificacion}`,
+    });
+
+    // RN-04 & RN-09: Notificación por correo a encargados de todos los turnos y gerencia
+    servicioNotificaciones.enviarNotificacion(
+      "solicitud_compra",
+      `🚨 PEDIDO RN-04 [${prioridad.toUpperCase()}]: Compra solicitada para ${repuestoActual.nombre}`,
+      [
+        "encargado.manana@planta.farmacia.com",
+        "encargado.tarde@planta.farmacia.com",
+        "encargado.noche@planta.farmacia.com",
+        "gerencia@planta.farmacia.com",
+      ],
+      `Se generó ${nuevoPedido.id} para ${cantidad} ${repuestoActual.unidad} de ${repuestoActual.nombre} con grado de urgencia ${prioridad}. Enviado a encargados de todos los turnos y gerencia (RN-04).`
+    );
+
     setMensajeExito(
-      `¡Pedido ${nuevoPedido.id} generado exitosamente! Se solicitaron ${cantidad} ${repuestoActual.unidad} de ${repuestoActual.nombre}.`
+      `✓ Pedido ${nuevoPedido.id} generado exitosamente (RN-03). Se notificó con urgencia "${prioridad}" a los encargados de turno Mañana, Tarde, Noche y a la Gerencia (RN-04).`
     );
   };
 
@@ -117,17 +128,17 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
       <div className="incidencia-form">
         <div className="subpantalla-encabezado">
           <span className="badge-seccion violeta">
-            Operar Stock · Solicitudes de Compra
+            RN-03 · RN-04 · Faltante y Urgencia
           </span>
           <p className="subpantalla-descripcion">
-            Reportá repuestos faltantes o con stock por debajo del punto de pedido y generá la orden de compra correspondiente.
+            Reportá faltantes y generá pedidos de compra. La solicitud se despacha con su grado de urgencia a encargados de todos los turnos y a gerencia.
           </p>
         </div>
 
         {repuestosCriticos.length > 0 && (
           <div className="compras-criticos-box">
             <strong className="compras-criticos-titulo">
-              ⚠️ Repuestos con stock bajo o agotado ({repuestosCriticos.length})
+              ⚠️ Repuestos con stock bajo o agotado (RN-02: Umbral alcanzado)
             </strong>
             <div className="compras-criticos-lista">
               {repuestosCriticos.map((rep) => (
@@ -147,7 +158,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
                     className="btn-pedir-rapido"
                     onClick={() => handleSeleccionarCritico(rep)}
                   >
-                    + Pedir compra
+                    + Pedir compra (RN-03)
                   </button>
                 </div>
               ))}
@@ -156,12 +167,12 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
         )}
 
         {mensajeExito && (
-          <div className="alerta-exito">
+          <div className="alerta-exito" role="status">
             <strong>{mensajeExito}</strong>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="incidencia-form" style={{ padding: 0 }}>
+        <form onSubmit={handleSubmit} className="formulario-sub-limpio">
           <div className="campo">
             <label htmlFor="repuesto-compra">Repuesto a solicitar</label>
             <select
@@ -172,14 +183,14 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
             >
               {repuestos.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.codigo} - {r.nombre} (Actual: {r.disponible} {r.unidad} | Mínimo: {r.minimo} {r.unidad})
+                  {r.codigo} - {r.nombre} (Stock actual: {r.disponible} {r.unidad} | Mínimo: {r.minimo} {r.unidad})
                 </option>
               ))}
             </select>
           </div>
 
           <div className="campo">
-            <label htmlFor="cantidad-compra">Cantidad a pedir</label>
+            <label htmlFor="cantidad-compra">Cantidad requerida</label>
             <input
               id="cantidad-compra"
               type="number"
@@ -192,61 +203,71 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
           </div>
 
           <div className="campo">
-            <label htmlFor="prioridad-compra">Prioridad del pedido</label>
+            <label htmlFor="prioridad-compra">Grado de urgencia (RN-04)</label>
             <select
               id="prioridad-compra"
               className="input-formulario"
               value={prioridad}
-              onChange={(e) => setPrioridad(e.target.value as "Baja" | "Media" | "Urgente")}
+              onChange={(e) => setPrioridad(e.target.value as PrioridadPedido)}
             >
-              <option value="Baja">Baja (reposición habitual)</option>
-              <option value="Media">Media (cerca de nivel mínimo)</option>
-              <option value="Urgente">Alta / Urgente (máquina parada o stock en 0)</option>
+              <option value="Urgente">🚨 Urgente (Máquina detenida o riesgo inminente de parada)</option>
+              <option value="Media">⚠️ Normal / Media (Stock bajo próximo a quebrar)</option>
+              <option value="Baja">🟢 Baja (Reposición programada estándar)</option>
             </select>
+            <small className="campo-ayuda">
+              Se enviará automáticamente por correo a los turnos Mañana, Tarde y Noche, y a Gerencia.
+            </small>
           </div>
 
           <div className="campo">
-            <label htmlFor="justificacion-compra">Motivo / Justificación</label>
+            <label htmlFor="justificacion-compra">Justificación técnica del pedido</label>
             <textarea
               id="justificacion-compra"
               value={justificacion}
               onChange={(e) => setJustificacion(e.target.value)}
-              placeholder="Explicá la urgencia o detalle del pedido..."
+              placeholder="Detallá por qué se solicita este material y para qué equipos..."
+              required
             />
           </div>
 
-          <button type="submit" className="boton-enviar boton-comprar-enviar">
-            🛒 Generar pedido de compra
+          <button type="submit" className="boton-enviar">
+            Enviar Pedido de Compra (RN-03 / RN-04)
           </button>
         </form>
 
-        <div className="historial-pedidos-box">
-          <h3 className="historial-pedidos-titulo">
-            Pedidos de compra generados
-          </h3>
-          <div className="historial-pedidos-lista">
-            {pedidos.map((ped) => (
-              <div key={ped.id} className="pedido-card">
-                <div className="pedido-card-header">
-                  <strong>{ped.id}</strong>
-                  <span
-                    className={`pedido-prioridad-badge ${
-                      ped.prioridad === "Urgente"
-                        ? "urgente"
-                        : ped.prioridad === "Media"
-                        ? "media"
-                        : "baja"
-                    }`}
-                  >
-                    {ped.prioridad}
+        <div className="historial-pedidos-seccion">
+          <h3 className="historial-pedidos-titulo">Pedidos de compra registrados</h3>
+          <div className="pedidos-lista">
+            {pedidos.slice(0, 3).map((p) => (
+              <div key={p.id} className="pedido-card">
+                <div className="pedido-header">
+                  <div>
+                    <span className="pedido-id">{p.id}</span>
+                    <span className="pedido-sku">{p.codigo}</span>
+                  </div>
+                  <div className="pedido-badges">
+                    <span
+                      className={`badge-prioridad ${
+                        p.prioridad === "Urgente"
+                          ? "badge-urgente"
+                          : p.prioridad === "Media"
+                          ? "badge-media"
+                          : "badge-baja"
+                      }`}
+                    >
+                      {p.prioridad}
+                    </span>
+                    <span className="badge-estado-pedido badge-cotizacion">
+                      {p.estado}
+                    </span>
+                  </div>
+                </div>
+                <h4 className="pedido-titulo">{p.repuestoNombre}</h4>
+                <div className="pedido-justificacion">
+                  <span>
+                    Cantidad: <strong>{p.cantidad} {p.unidad}</strong>
                   </span>
-                </div>
-                <div className="pedido-card-detalle">
-                  <strong>{ped.cantidad} {ped.unidad}</strong> de {ped.repuestoNombre} ({ped.codigo})
-                </div>
-                <div className="pedido-card-footer">
-                  <span>Estado: <strong>{ped.estado}</strong></span>
-                  <span>{ped.fecha}</span>
+                  <span> · Fecha: {p.fecha}</span>
                 </div>
               </div>
             ))}

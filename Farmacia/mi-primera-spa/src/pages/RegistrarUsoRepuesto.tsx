@@ -1,9 +1,13 @@
 import { useState } from "react";
 import { repuestos, type Repuesto } from "../data/repuestos";
+import { reservasIniciales } from "../data/reservas";
+import { servicioNotificaciones } from "../services/notificacionesService";
+import { trazabilidadInicial } from "../data/trazabilidadData";
 import "./styles.css";
 
 interface RegistrarUsoRepuestoProps {
   onBack?: () => void;
+  onGenerarPedidoCompra?: (repuesto: Repuesto) => void;
 }
 
 interface RegistroUso {
@@ -15,22 +19,31 @@ interface RegistroUso {
   unidad: string;
   motivo: string;
   fecha: string;
+  esConsumoReserva?: boolean;
 }
 
-export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoProps) {
+export default function RegistrarUsoRepuesto({
+  onBack,
+  onGenerarPedidoCompra,
+}: RegistrarUsoRepuestoProps) {
   const [listaRepuestos, setListaRepuestos] = useState<Repuesto[]>(repuestos);
-  const [maquina, setMaquina] = useState<string>("Compresor 1 (M-001)");
+  const [maquina, setMaquina] = useState<string>("Envasadora Rotativa #03");
   const [repuestoId, setRepuestoId] = useState<number>(listaRepuestos[0]?.id ?? 1);
   const [cantidad, setCantidad] = useState<number>(1);
-  const [motivo, setMotivo] = useState<string>("Cambio preventivo por vibración y desgaste");
+  const [motivo, setMotivo] = useState<string>("Cambio correctivo por vibración y desgaste");
   const [ordenTrabajo, setOrdenTrabajo] = useState<string>("OT-2026-089");
   const [mensajeExito, setMensajeExito] = useState<string>("");
   const [error, setError] = useState<string>("");
+  const [mostrarBotonCompra, setMostrarBotonCompra] = useState<boolean>(false);
+
+  // RN-10: Ejecución de mantenimiento con reserva
+  const [esPreventivoConReserva, setEsPreventivoConReserva] = useState<boolean>(false);
+  const [reservaIdSeleccionada, setReservaIdSeleccionada] = useState<number | null>(null);
 
   const [historialUsos, setHistorialUsos] = useState<RegistroUso[]>([
     {
       id: 1,
-      maquina: "Bomba hidráulica (M-003)",
+      maquina: "Prensa Hidráulica H-12",
       repuestoNombre: "Filtro de Aire Compresor Atlas Copco",
       codigo: "SKU-FLT-880",
       cantidad: 2,
@@ -42,25 +55,54 @@ export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoPro
 
   const repuestoActual = listaRepuestos.find((r) => r.id === repuestoId);
 
+  // Reservas activas para este repuesto (RN-05)
+  const reservasActivas = reservasIniciales.filter(
+    (res) =>
+      res.repuestoCodigo === repuestoActual?.codigo && res.estado === "Activa"
+  );
+  const totalReservadoActivo = reservasActivas.reduce(
+    (acc, curr) => acc + curr.cantidad,
+    0
+  );
+  const stockLibre = Math.max(
+    0,
+    (repuestoActual?.disponible ?? 0) - totalReservadoActivo
+  );
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setMostrarBotonCompra(false);
 
     if (!repuestoActual) return;
 
-    if (cantidad <= 0) {
-      setError("La cantidad utilizada debe ser mayor a 0.");
+    // RN-01: Cantidad entera >= 1
+    const cantidadEntera = Math.floor(cantidad);
+    if (cantidadEntera < 1) {
+      setError("RN-01: La cantidad utilizada debe ser un número entero mayor o igual a 1.");
       return;
     }
 
-    if (cantidad > repuestoActual.disponible) {
+    // RN-01: Validación de stock físico disponible
+    if (cantidadEntera > repuestoActual.disponible) {
       setError(
-        `Stock insuficiente. Hay ${repuestoActual.disponible} ${repuestoActual.unidad} disponibles y solicitás descontar ${cantidad}.`
+        `RN-01 Rechazado: Stock físico insuficiente. Stock en depósito: ${repuestoActual.disponible} ${repuestoActual.unidad}. Solicitado: ${cantidadEntera}.`
       );
+      setMostrarBotonCompra(true);
       return;
     }
 
-    const nuevoStock = repuestoActual.disponible - cantidad;
+    // RN-05: Si no es consumo de la reserva específica, validar que no tome piezas reservadas
+    if (!esPreventivoConReserva && cantidadEntera > stockLibre) {
+      setError(
+        `RN-05 Rechazado: Hay ${totalReservadoActivo} ${repuestoActual.unidad} reservadas para mantenimiento preventivo en ${reservasActivas[0]?.maquina}. Stock libre para otras reparaciones: ${stockLibre} ${repuestoActual.unidad}. Exige autorización del Encargado para liberar reservas.`
+      );
+      setMostrarBotonCompra(true);
+      return;
+    }
+
+    // RN-01: Descuento del stock físico
+    const nuevoStock = repuestoActual.disponible - cantidadEntera;
     const nuevoEstado =
       nuevoStock === 0
         ? "Agotado"
@@ -83,22 +125,71 @@ export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoPro
       repuestos[globalIndex].estado = nuevoEstado;
     }
 
-    
+    // RN-10: Si es ejecución de preventivo con reserva, liberar y marcar consumo en la misma transacción
+    let detalleReserva = "";
+    if (esPreventivoConReserva && reservaIdSeleccionada) {
+      const idxRes = reservasIniciales.findIndex((res) => res.id === reservaIdSeleccionada);
+      if (idxRes !== -1) {
+        reservasIniciales[idxRes].estado = "Consumida";
+        reservasIniciales[idxRes].motivoLiberacion = `Consumida en preventivo ${ordenTrabajo}`;
+        reservasIniciales[idxRes].fechaLiberacion = "Hoy";
+        detalleReserva = ` (Reserva ${reservasIniciales[idxRes].codigo} liberada y consumida en la misma transacción)`;
+      }
+    }
+
+    // RN-06: Registrar en trazabilidad histórica
+    trazabilidadInicial.push({
+      id: `TRZ-0${trazabilidadInicial.length + 10}`,
+      repuestoCodigo: repuestoActual.codigo,
+      repuestoNombre: repuestoActual.nombre,
+      tipo: "uso",
+      titulo: esPreventivoConReserva
+        ? "Consumo en Preventivo (RN-10)"
+        : "Consumo en Reparación (RN-01)",
+      fecha: new Date().toLocaleDateString("es-AR") + " " + new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
+      referencia: ordenTrabajo,
+      cantidad: cantidadEntera,
+      unidad: repuestoActual.unidad,
+      usuario: "Carlos Gómez (Mantenimiento)",
+      detalles: `${motivo}. ${detalleReserva}`,
+      maquina,
+    });
+
+    // RN-09: Notificación por correo de cambio de parte / uso de repuesto
+    servicioNotificaciones.enviarNotificacion(
+      "cambio_parte",
+      `🔧 USO RN-01: ${cantidadEntera} ${repuestoActual.unidad} consumidas en ${maquina}`,
+      ["encargados@planta.farmacia.com", "supervisores@planta.farmacia.com"],
+      `Orden ${ordenTrabajo}: ${repuestoActual.nombre} (${repuestoActual.codigo}). Stock físico restante: ${nuevoStock} ${repuestoActual.unidad}.${detalleReserva}`
+    );
+
+    // RN-02: Alerta por correo si el stock disponible cayó al umbral mínimo
+    if (nuevoStock <= repuestoActual.minimo) {
+      servicioNotificaciones.enviarNotificacion(
+        "alerta_umbral",
+        `⚠️ ALERTA RN-02: Stock mínimo alcanzado para ${repuestoActual.nombre}`,
+        ["encargados@planta.farmacia.com", "gerencia@planta.farmacia.com", "compras@planta.farmacia.com"],
+        `El repuesto ${repuestoActual.codigo} cayó a ${nuevoStock} ${repuestoActual.unidad} (umbral mínimo: ${repuestoActual.minimo}). Se incorporó a la lista de reposición.`
+      );
+    }
+
     const nuevoRegistro: RegistroUso = {
       id: Date.now(),
       maquina,
       repuestoNombre: repuestoActual.nombre,
       codigo: repuestoActual.codigo,
-      cantidad,
+      cantidad: cantidadEntera,
       unidad: repuestoActual.unidad,
       motivo,
       fecha: "Recién",
+      esConsumoReserva: esPreventivoConReserva,
     };
 
     setHistorialUsos([nuevoRegistro, ...historialUsos]);
     setMensajeExito(
-      `✓ Se registraron y descontaron ${cantidad} ${repuestoActual.unidad} de ${repuestoActual.nombre} para ${maquina}. Stock restante: ${nuevoStock} ${repuestoActual.unidad}.`
+      `✓ RN-01: Se descontaron ${cantidadEntera} ${repuestoActual.unidad} de ${repuestoActual.nombre} para ${maquina}. Stock físico restante: ${nuevoStock} ${repuestoActual.unidad}.${detalleReserva}`
     );
+    setEsPreventivoConReserva(false);
   };
 
   return (
@@ -118,21 +209,30 @@ export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoPro
       <form className="incidencia-form" onSubmit={handleSubmit}>
         <div className="subpantalla-encabezado">
           <span className="badge-seccion naranja">
-            Operar Stock · Consumo en Reparación
+            RN-01 · RN-05 · RN-10 · Descuento y Reservas
           </span>
           <p className="subpantalla-descripcion">
-            Indicá qué repuestos y qué cantidades utilizaste para completar la reparación. El sistema descontará automáticamente el stock disponible.
+            Descontá del stock físico las partes utilizadas (≥ 1). Los repuestos retenidos por reserva no pueden usarse para otra máquina sin autorización.
           </p>
         </div>
 
         {error && (
-          <div className="alerta-error">
-            ⚠️ {error}
+          <div className="alerta-error" role="alert">
+            <p>⚠️ {error}</p>
+            {mostrarBotonCompra && onGenerarPedidoCompra && repuestoActual && (
+              <button
+                type="button"
+                className="btn-accion btn-cotizar mt-xs"
+                onClick={() => onGenerarPedidoCompra(repuestoActual)}
+              >
+                📝 Reportar Faltante y Generar Pedido de Compra (RN-03) →
+              </button>
+            )}
           </div>
         )}
 
         {mensajeExito && (
-          <div className="alerta-exito">
+          <div className="alerta-exito" role="status">
             <strong>{mensajeExito}</strong>
           </div>
         )}
@@ -145,11 +245,11 @@ export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoPro
             value={maquina}
             onChange={(e) => setMaquina(e.target.value)}
           >
-            <option>Compresor 1 (M-001)</option>
-            <option>Compresor 2 (M-002)</option>
-            <option>Bomba hidráulica (M-003)</option>
-            <option>Fraccionadora 2 (M-004)</option>
-            <option>Envasadora automática (M-005)</option>
+            <option value="Envasadora Rotativa #03">Envasadora Rotativa #03</option>
+            <option value="Prensa Hidráulica H-12">Prensa Hidráulica H-12</option>
+            <option value="Compresor Central C-01">Compresor Central C-01</option>
+            <option value="Blistera Automática #04">Blistera Automática #04</option>
+            <option value="Lavadora de Ampollas L-02">Lavadora de Ampollas L-02</option>
           </select>
         </div>
 
@@ -163,11 +263,12 @@ export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoPro
               setRepuestoId(Number(e.target.value));
               setError("");
               setMensajeExito("");
+              setMostrarBotonCompra(false);
             }}
           >
             {listaRepuestos.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.codigo} - {r.nombre} (Disponible: {r.disponible} {r.unidad})
+                {r.codigo} - {r.nombre} (Stock Físico: {r.disponible} {r.unidad})
               </option>
             ))}
           </select>
@@ -180,28 +281,68 @@ export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoPro
               <strong>{repuestoActual.ubicacion}</strong>
             </div>
             <div>
-              <span>Stock disponible: </span>
-              <strong
-                className={
-                  repuestoActual.disponible === 0
-                    ? "stock-numero-agotado"
-                    : repuestoActual.disponible <= repuestoActual.minimo
-                    ? "stock-numero-bajo"
-                    : "actual"
-                }
-              >
+              <span>Stock Físico: </span>
+              <strong>
                 {repuestoActual.disponible} {repuestoActual.unidad}
               </strong>
+            </div>
+            <div>
+              <span>Stock Libre (sin reserva): </span>
+              <strong className={stockLibre === 0 ? "text-red" : "text-green"}>
+                {stockLibre} {repuestoActual.unidad}
+              </strong>
+            </div>
+            <div>
+              <span>Umbral Mínimo (RN-02): </span>
+              <strong>{repuestoActual.minimo} {repuestoActual.unidad}</strong>
             </div>
           </div>
         )}
 
+        {/* RN-10: Consumo de reserva en mantenimiento preventivo */}
+        {reservasActivas.length > 0 && (
+          <div className="tablero-bloque mt-sm">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={esPreventivoConReserva}
+                onChange={(e) => {
+                  setEsPreventivoConReserva(e.target.checked);
+                  if (e.target.checked && reservasActivas[0]) {
+                    setReservaIdSeleccionada(reservasActivas[0].id);
+                    setMaquina(reservasActivas[0].maquina);
+                  }
+                }}
+              />
+              <strong> Ejecutar mantenimiento preventivo planificado (Consumir reserva RN-10)</strong>
+            </label>
+
+            {esPreventivoConReserva && (
+              <div className="form-group mt-xs">
+                <label htmlFor="reservaSelect">Reserva a consumir y liberar en la transacción:</label>
+                <select
+                  id="reservaSelect"
+                  value={reservaIdSeleccionada ?? ""}
+                  onChange={(e) => setReservaIdSeleccionada(Number(e.target.value))}
+                >
+                  {reservasActivas.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.codigo} — {r.cantidad} {r.unidad} para {r.maquina} ({r.motivo})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="campo">
-          <label htmlFor="cantidad-usada">Cantidad de repuestos consumidos</label>
+          <label htmlFor="cantidad-usada">Cantidad consumida (Entera ≥ 1, RN-01)</label>
           <input
             id="cantidad-usada"
             type="number"
             min={1}
+            step={1}
             max={repuestoActual?.disponible ?? 1}
             className="input-formulario"
             value={cantidad}
@@ -232,7 +373,7 @@ export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoPro
         </div>
 
         <button type="submit" className="boton-enviar">
-          Descontar repuestos y registrar uso
+          Descontar repuestos del stock físico (RN-01)
         </button>
       </form>
 
@@ -249,6 +390,11 @@ export default function RegistrarUsoRepuesto({ onBack }: RegistrarUsoRepuestoPro
               </div>
               <div className="uso-card-consumo">
                 Consumo: <strong>{item.cantidad} {item.unidad}</strong> de {item.repuestoNombre} ({item.codigo})
+                {item.esConsumoReserva && (
+                  <span className="badge-estado-pedido badge-aprobado ml-xs">
+                    RN-10 Consumo de Reserva
+                  </span>
+                )}
               </div>
               <small className="uso-card-motivo">{item.motivo}</small>
             </div>

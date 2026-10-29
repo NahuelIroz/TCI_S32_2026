@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { incidencias, type Incidencia } from "../data/incidencias";
+import { servicioNotificaciones } from "../services/notificacionesService";
 import "./styles.css";
 
 interface ReporteIncidenciaProps {
@@ -6,7 +8,7 @@ interface ReporteIncidenciaProps {
 }
 
 function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
-  const [maquina, setMaquina] = useState("Compresor 1 (M-001)");
+  const [maquina, setMaquina] = useState("Envasadora Rotativa #03");
   const [descripcion, setDescripcion] = useState("");
   const [fotos, setFotos] = useState<File[]>([]);
   const [turno, setTurno] = useState("Mañana");
@@ -21,15 +23,40 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
   const enviarIncidencia = (event: React.FormEvent) => {
     event.preventDefault();
 
-    const incidencia = {
+    if (!descripcion.trim()) {
+      alert("Por favor detallá la descripción de la falla observada.");
+      return;
+    }
+
+    const nueva: Incidencia = {
+      id: Date.now(),
+      codigo: `INC-10${incidencias.length + 45}`,
       maquina,
+      codigoMaquina: maquina.includes("Envasadora")
+        ? "SEC-ENV-03"
+        : maquina.includes("Prensa")
+        ? "HYD-PRE-12"
+        : "CMP-CTR-01",
       descripcion,
-      fotos,
+      fecha: "Recién",
+      estado: "Pendiente",
+      turno,
+      tecnico: "Sin asignar",
+      adjuntos: fotos.length,
     };
 
-    console.log("Incidencia:", incidencia);
+    incidencias.unshift(nueva);
 
-    alert("Incidencia enviada");
+    // RN-09: Notificación por correo de incidente reportado
+    servicioNotificaciones.enviarNotificacion(
+      "incidente",
+      `📋 INCIDENTE RN-09: Falla reportada en ${maquina} (${nueva.codigo})`,
+      ["mantenimiento@planta.farmacia.com", "supervisores@planta.farmacia.com"],
+      `Turno ${turno}: ${descripcion}. Requiere inspección técnica urgente.`
+    );
+
+    alert(`✓ Incidencia ${nueva.codigo} registrada. Se notificó al equipo de mantenimiento por correo (RN-09).`);
+    if (onBack) onBack();
   };
 
   return (

@@ -5,11 +5,13 @@ import "./RepuestoCard.css";
 interface RepuestoCardProps {
   repuesto: Repuesto;
   onComprar?: (repuesto: Repuesto) => void;
+  onVerTrazabilidad?: (repuesto: Repuesto) => void;
 }
 
 function RepuestoCard({
   repuesto,
   onComprar,
+  onVerTrazabilidad,
 }: RepuestoCardProps) {
   const claseEstado =
     repuesto.estado === "Disponible"
@@ -62,13 +64,26 @@ function RepuestoCard({
           </div>
         </div>
 
-        <button
-          type="button"
-          className="repuesto-comprar"
-          onClick={() => onComprar?.(repuesto)}
-        >
-          🛒 Comprar
-        </button>
+        <div className="repuesto-acciones-botones">
+          {onVerTrazabilidad && (
+            <button
+              type="button"
+              className="btn-trazabilidad-mini"
+              onClick={() => onVerTrazabilidad(repuesto)}
+              title="Ver historia interna (RN-06)"
+            >
+              📜 Historia
+            </button>
+          )}
+
+          <button
+            type="button"
+            className="repuesto-comprar"
+            onClick={() => onComprar?.(repuesto)}
+          >
+            🛒 Comprar
+          </button>
+        </div>
 
       </div>
     </article>
