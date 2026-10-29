@@ -52,7 +52,6 @@ function MisIncidencias({
   return (
     <div className="incidencia-container mis-incidencias">
 
-      {/* ENCABEZADO */}
       <header className="incidencia-header">
 
         <button
@@ -68,10 +67,8 @@ function MisIncidencias({
 
       </header>
 
-      {/* CONTENIDO PRINCIPAL */}
       <main className="incidencia-form mis-contenido">
 
-        {/* BUSCADOR */}
         <div className="campo mis-buscador">
 
           <label htmlFor="buscar-incidencia">
@@ -133,7 +130,6 @@ function MisIncidencias({
 
         </div>
 
-        {/* LISTADO DE INCIDENCIAS */}
         <section className="mis-listado">
 
           {incidenciasFiltradas.length > 0 ? (
@@ -159,8 +155,6 @@ function MisIncidencias({
           )}
 
         </section>
-
-        {/* BOTÓN NUEVA INCIDENCIA */}
         <button
           type="button"
           className="details-button"

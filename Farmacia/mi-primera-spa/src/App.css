@@ -576,8 +576,42 @@
 }
 
 .action-icon.purple {
-  background: linear-gradient(145deg, #59ca91, #21885b);
-  box-shadow: 0 5px 12px rgba(33, 136, 91, 0.2);
+  background: linear-gradient(145deg, #8b5cf6, #6d28d9);
+  box-shadow: 0 5px 12px rgba(109, 40, 217, 0.2);
+}
+
+.action-icon.green {
+  background: linear-gradient(145deg, #10b981, #059669);
+  box-shadow: 0 5px 12px rgba(16, 185, 129, 0.2);
+}
+
+.action-icon.teal {
+  background: linear-gradient(145deg, #14b8a6, #0d9488);
+  box-shadow: 0 5px 12px rgba(20, 184, 166, 0.2);
+}
+
+.action-icon.orange {
+  background: linear-gradient(145deg, #f97316, #ea580c);
+  box-shadow: 0 5px 12px rgba(249, 115, 22, 0.2);
+}
+
+.user-role-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.user-role-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  background-color: #1e3a8a;
+  color: #bfdbfe;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
 }
 
 .action-icon svg,

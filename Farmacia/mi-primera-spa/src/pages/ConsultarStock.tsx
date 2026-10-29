@@ -10,11 +10,12 @@ import "./styles.css";
 
 interface ConsultarStockProps {
   onBack?: () => void;
+  onComprar?: (repuesto: Repuesto) => void;
 }
 
 type FiltroStock = "Todos" | EstadoStock;
 
-function ConsultarStock({ onBack }: ConsultarStockProps) {
+function ConsultarStock({ onBack, onComprar }: ConsultarStockProps) {
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<FiltroStock>("Todos");
 
@@ -51,7 +52,11 @@ function ConsultarStock({ onBack }: ConsultarStockProps) {
   });
 
   const comprarRepuesto = (repuesto: Repuesto) => {
-    alert(`Compra de ${repuesto.nombre} pendiente de implementar`);
+    if (onComprar) {
+      onComprar(repuesto);
+    } else {
+      alert(`Compra de ${repuesto.nombre} pendiente de implementar`);
+    }
   };
 
   return (

@@ -35,6 +35,13 @@ function RepuestoCard({
         {repuesto.nombre}
       </h3>
 
+      {repuesto.ubicacion && (
+        <div className="repuesto-ubicacion">
+          <span className="repuesto-ubicacion-icon">📍</span>
+          <span>{repuesto.ubicacion}</span>
+        </div>
+      )}
+
       <div className="repuesto-card-footer">
 
         <div className="repuesto-cantidades">
@@ -59,7 +66,6 @@ function RepuestoCard({
           type="button"
           className="repuesto-comprar"
           onClick={() => onComprar?.(repuesto)}
-          disabled={repuesto.estado === "Agotado"}
         >
           🛒 Comprar
         </button>

@@ -44,11 +44,27 @@
 }
 
 .repuesto-nombre {
-  margin: 14px 0;
+  margin: 14px 0 8px;
   font-size: 15px;
   font-weight: 700;
   color: #17324d;
   line-height: 1.4;
+}
+
+.repuesto-ubicacion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 6px 10px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.repuesto-ubicacion-icon {
+  font-size: 13px;
 }
 
 .repuesto-card-footer {
