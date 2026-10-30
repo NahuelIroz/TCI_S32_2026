@@ -48,7 +48,6 @@ export default function NecesidadesReposicion({
           )}
         </div>
 
-        {/* Resumen de Alerta de Reposición */}
         <div className="kpi-grid">
           <div className="kpi-card">
             <span className="kpi-label">Repuestos Críticos</span>
@@ -71,7 +70,6 @@ export default function NecesidadesReposicion({
           </div>
         </div>
 
-        {/* Sección de Repuestos Críticos */}
         <h2 className="seccion-subtitulo">
           ⚠️ Repuestos que requieren reposición urgente
         </h2>

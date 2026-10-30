@@ -36,7 +36,6 @@ export default function RegistrarUsoRepuesto({
   const [error, setError] = useState<string>("");
   const [mostrarBotonCompra, setMostrarBotonCompra] = useState<boolean>(false);
 
-  // RN-10: Ejecución de mantenimiento con reserva
   const [esPreventivoConReserva, setEsPreventivoConReserva] = useState<boolean>(false);
   const [reservaIdSeleccionada, setReservaIdSeleccionada] = useState<number | null>(null);
 
@@ -55,7 +54,6 @@ export default function RegistrarUsoRepuesto({
 
   const repuestoActual = listaRepuestos.find((r) => r.id === repuestoId);
 
-  // Reservas activas para este repuesto (RN-05)
   const reservasActivas = reservasIniciales.filter(
     (res) =>
       res.repuestoCodigo === repuestoActual?.codigo && res.estado === "Activa"
@@ -76,14 +74,12 @@ export default function RegistrarUsoRepuesto({
 
     if (!repuestoActual) return;
 
-    // RN-01: Cantidad entera >= 1
     const cantidadEntera = Math.floor(cantidad);
     if (cantidadEntera < 1) {
       setError("RN-01: La cantidad utilizada debe ser un número entero mayor o igual a 1.");
       return;
     }
 
-    // RN-01: Validación de stock físico disponible
     if (cantidadEntera > repuestoActual.disponible) {
       setError(
         `RN-01 Rechazado: Stock físico insuficiente. Stock en depósito: ${repuestoActual.disponible} ${repuestoActual.unidad}. Solicitado: ${cantidadEntera}.`
@@ -92,7 +88,6 @@ export default function RegistrarUsoRepuesto({
       return;
     }
 
-    // RN-05: Si no es consumo de la reserva específica, validar que no tome piezas reservadas
     if (!esPreventivoConReserva && cantidadEntera > stockLibre) {
       setError(
         `RN-05 Rechazado: Hay ${totalReservadoActivo} ${repuestoActual.unidad} reservadas para mantenimiento preventivo en ${reservasActivas[0]?.maquina}. Stock libre para otras reparaciones: ${stockLibre} ${repuestoActual.unidad}. Exige autorización del Encargado para liberar reservas.`
@@ -101,7 +96,6 @@ export default function RegistrarUsoRepuesto({
       return;
     }
 
-    // RN-01: Descuento del stock físico
     const nuevoStock = repuestoActual.disponible - cantidadEntera;
     const nuevoEstado =
       nuevoStock === 0
@@ -118,14 +112,12 @@ export default function RegistrarUsoRepuesto({
       )
     );
 
-    // Actualizar catálogo global
     const globalIndex = repuestos.findIndex((r) => r.id === repuestoActual.id);
     if (globalIndex !== -1) {
       repuestos[globalIndex].disponible = nuevoStock;
       repuestos[globalIndex].estado = nuevoEstado;
     }
 
-    // RN-10: Si es ejecución de preventivo con reserva, liberar y marcar consumo en la misma transacción
     let detalleReserva = "";
     if (esPreventivoConReserva && reservaIdSeleccionada) {
       const idxRes = reservasIniciales.findIndex((res) => res.id === reservaIdSeleccionada);
@@ -137,7 +129,6 @@ export default function RegistrarUsoRepuesto({
       }
     }
 
-    // RN-06: Registrar en trazabilidad histórica
     trazabilidadInicial.push({
       id: `TRZ-0${trazabilidadInicial.length + 10}`,
       repuestoCodigo: repuestoActual.codigo,
@@ -155,7 +146,6 @@ export default function RegistrarUsoRepuesto({
       maquina,
     });
 
-    // RN-09: Notificación por correo de cambio de parte / uso de repuesto
     servicioNotificaciones.enviarNotificacion(
       "cambio_parte",
       `🔧 USO RN-01: ${cantidadEntera} ${repuestoActual.unidad} consumidas en ${maquina}`,
@@ -163,8 +153,7 @@ export default function RegistrarUsoRepuesto({
       `Orden ${ordenTrabajo}: ${repuestoActual.nombre} (${repuestoActual.codigo}). Stock físico restante: ${nuevoStock} ${repuestoActual.unidad}.${detalleReserva}`
     );
 
-    // RN-02: Alerta por correo si el stock disponible cayó al umbral mínimo
-    if (nuevoStock <= repuestoActual.minimo) {
+   if (nuevoStock <= repuestoActual.minimo) {
       servicioNotificaciones.enviarNotificacion(
         "alerta_umbral",
         `⚠️ ALERTA RN-02: Stock mínimo alcanzado para ${repuestoActual.nombre}`,
@@ -208,9 +197,7 @@ export default function RegistrarUsoRepuesto({
 
       <form className="incidencia-form" onSubmit={handleSubmit}>
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion naranja">
-            RN-01 · RN-05 · RN-10 · Descuento y Reservas
-          </span>
+        
           <p className="subpantalla-descripcion">
             Descontá del stock físico las partes utilizadas (≥ 1). Los repuestos retenidos por reserva no pueden usarse para otra máquina sin autorización.
           </p>
@@ -225,7 +212,7 @@ export default function RegistrarUsoRepuesto({
                 className="btn-accion btn-cotizar mt-xs"
                 onClick={() => onGenerarPedidoCompra(repuestoActual)}
               >
-                📝 Reportar Faltante y Generar Pedido de Compra (RN-03) →
+                 Reportar Faltante y Generar Pedido de Compra  →
               </button>
             )}
           </div>
@@ -293,13 +280,12 @@ export default function RegistrarUsoRepuesto({
               </strong>
             </div>
             <div>
-              <span>Umbral Mínimo (RN-02): </span>
+              <span>Umbral Mínimo: </span>
               <strong>{repuestoActual.minimo} {repuestoActual.unidad}</strong>
             </div>
           </div>
         )}
 
-        {/* RN-10: Consumo de reserva en mantenimiento preventivo */}
         {reservasActivas.length > 0 && (
           <div className="tablero-bloque mt-sm">
             <label className="checkbox-label">
@@ -314,7 +300,7 @@ export default function RegistrarUsoRepuesto({
                   }
                 }}
               />
-              <strong> Ejecutar mantenimiento preventivo planificado (Consumir reserva RN-10)</strong>
+              <strong> Ejecutar mantenimiento preventivo planificado</strong>
             </label>
 
             {esPreventivoConReserva && (
@@ -337,7 +323,7 @@ export default function RegistrarUsoRepuesto({
         )}
 
         <div className="campo">
-          <label htmlFor="cantidad-usada">Cantidad consumida (Entera ≥ 1, RN-01)</label>
+          <label htmlFor="cantidad-usada">Cantidad consumida</label>
           <input
             id="cantidad-usada"
             type="number"
@@ -373,7 +359,7 @@ export default function RegistrarUsoRepuesto({
         </div>
 
         <button type="submit" className="boton-enviar">
-          Descontar repuestos del stock físico (RN-01)
+          Descontar repuestos del stock físico 
         </button>
       </form>
 
@@ -392,7 +378,7 @@ export default function RegistrarUsoRepuesto({
                 Consumo: <strong>{item.cantidad} {item.unidad}</strong> de {item.repuestoNombre} ({item.codigo})
                 {item.esConsumoReserva && (
                   <span className="badge-estado-pedido badge-aprobado ml-xs">
-                    RN-10 Consumo de Reserva
+                     Consumo de Reserva
                   </span>
                 )}
               </div>

@@ -566,7 +566,7 @@ export default function Home({
 
         <nav className="desktop-nav" aria-label="Navegación principal">
           <a
-            className="nav-link active"
+            className="nav-link active" style={{ display: "none" }}
             href="#inicio"
             onClick={(e) => {
               e.preventDefault();
@@ -611,58 +611,11 @@ export default function Home({
             </>
           )}
 
-          {esMantenimiento && (
+          {false && esMantenimiento && (
             <>
-              <a
-                className="nav-link"
-                href="#stock"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("stock");
-                }}
-              >
-                Existencias
-              </a>
-              <a
-                className="nav-link"
-                href="#scanner"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("scan");
-                }}
-              >
-                Escanear QR
-              </a>
-              <a
-                className="nav-link"
-                href="#ingreso"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("ingresarStock");
-                }}
-              >
-                Ingresar Stock
-              </a>
-              <a
-                className="nav-link"
-                href="#uso"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("registrarUso");
-                }}
-              >
-                Uso en Reparación
-              </a>
-              <a
-                className="nav-link"
-                href="#trazabilidad"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("trazabilidad");
-                }}
-              >
-                Trazabilidad (RN-06)
-              </a>
+              
+              
+              
               <a
                 className="nav-link"
                 href="#compras"
@@ -671,8 +624,7 @@ export default function Home({
                   setPantalla("pedidosCompra");
                 }}
               >
-                Compras
-              </a>
+                </a>
             </>
           )}
 
@@ -736,7 +688,7 @@ export default function Home({
                   setPantalla("trazabilidad");
                 }}
               >
-                Trazabilidad (RN-06)
+                Trazabilidad
               </a>
               <a
                 className="nav-link"
@@ -746,7 +698,7 @@ export default function Home({
                   setPantalla("altaMaquinaria");
                 }}
               >
-                Nueva Máquina (RN-07)
+                Nueva Máquina 
               </a>
             </>
           )}
@@ -818,7 +770,7 @@ export default function Home({
         </nav>
 
         <div className="topbar-acciones-derecha">
-         
+
           <button
             className="topbar-user"
             type="button"
@@ -914,12 +866,11 @@ export default function Home({
 
         <footer className="dashboard-footer">
           <span>
-            <span className="footer-cross">+</span> Mantenimiento Pharma · Perfil {usuario.titulo} · Reglas RN-01 a RN-10 activas
+            <span className="footer-cross">+</span> Mantenimiento  · Perfil {usuario.titulo} · Reglas RN-01 a RN-10 activas
           </span>
         </footer>
       </main>
 
-      {/* Navegación inferior móvil adaptativa */}
       <nav className="mobile-nav" aria-label="Navegación inferior">
         <a
           className="mobile-nav-item selected"

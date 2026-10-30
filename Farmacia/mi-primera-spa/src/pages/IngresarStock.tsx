@@ -97,7 +97,7 @@ export default function IngresarStock({
 
     servicioNotificaciones.enviarNotificacion(
       "cambio_parte",
-      `📦 CARGA RN-08: ${cantidadEntera} ${repuestoActual.unidad} recibidas de ${repuestoActual.nombre}`,
+      `CARGA RN-08: ${cantidadEntera} ${repuestoActual.unidad} recibidas de ${repuestoActual.nombre}`,
       ["encargados@planta.farmacia.com", "compras@planta.farmacia.com"],
       `Remito ${remito}: Se cargó stock físico en ${ubicacion}. Tarea delegada a: ${tecnicoDelegado}. Nuevo stock total: ${nuevoStock} ${repuestoActual.unidad}.`
     );
@@ -123,9 +123,7 @@ export default function IngresarStock({
 
       <form className="incidencia-form" onSubmit={handleSubmit}>
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion verde">
-            {subtitulo}
-          </span>
+        
           <p className="subpantalla-descripcion">
             Registrá la entrada de mercadería de compras al almacén, actualizá el stock físico, definí la ubicación y delegá la supervisión física.
           </p>
@@ -175,7 +173,7 @@ export default function IngresarStock({
         )}
 
         <div className="campo">
-          <label htmlFor="cantidad-input">Cantidad recibida (Entera ≥ 1, RN-08)</label>
+          <label htmlFor="cantidad-input">Cantidad recibida</label>
           <input
             id="cantidad-input"
             type="number"
@@ -202,7 +200,7 @@ export default function IngresarStock({
         </div>
 
         <div className="campo">
-          <label htmlFor="ubicacion-input">Ubicación física en el depósito (RN-08)</label>
+          <label htmlFor="ubicacion-input">Ubicación física en el depósito</label>
           <input
             id="ubicacion-input"
             type="text"
@@ -215,7 +213,7 @@ export default function IngresarStock({
         </div>
 
         <div className="campo">
-          <label htmlFor="delegar-input">Delegar y supervisar carga física (RN-08)</label>
+          <label htmlFor="delegar-input">Delegar y supervisar carga física </label>
           <select
             id="delegar-input"
             className="input-formulario"

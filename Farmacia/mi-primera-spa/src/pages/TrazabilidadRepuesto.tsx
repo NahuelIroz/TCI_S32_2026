@@ -55,7 +55,7 @@ export default function TrazabilidadRepuesto({
 
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion verde">Regla RN-06 · Historia Interna</span>
+          <span className="badge-seccion verde"> Historia Interna</span>
           <p className="subpantalla-descripcion">
             Reconstrucción completa del ciclo de vida interno: Solicitud de compra → Recepción en almacén → Uso en reparaciones.
           </p>
@@ -99,7 +99,7 @@ export default function TrazabilidadRepuesto({
                 <span className="detalle-valor">{repuestoInfo.ubicacion}</span>
               </div>
               <div>
-                <span className="detalle-rotulo">Umbral mínimo (RN-02):</span>
+                <span className="detalle-rotulo">Umbral mínimo:</span>
                 <span className="detalle-valor">{repuestoInfo.minimo} {repuestoInfo.unidad}</span>
               </div>
               <div>
@@ -112,9 +112,8 @@ export default function TrazabilidadRepuesto({
           </div>
         )}
 
-        {/* Línea de Tiempo de Trazabilidad */}
         <h3 className="seccion-subtitulo">
-          Línea de tiempo interna (RN-06)
+          Línea de tiempo interna 
         </h3>
 
         {historialRepuesto.length === 0 ? (

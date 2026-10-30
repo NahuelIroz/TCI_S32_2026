@@ -116,7 +116,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado-con-accion">
           <div>
-            <span className="badge-seccion verde">Administrar · Supervisión</span>
             <p className="subpantalla-descripcion">
               Delegá órdenes técnicas, asigná especialistas y supervisá el cumplimiento de preventivos y correctivos.
             </p>
@@ -136,7 +135,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           </div>
         )}
 
-        {/* Modal / Acordeón para Delegar Tarea */}
         {mostrarModalDelegar && (
           <form className="formulario-delegar-tarea" onSubmit={handleCrearTarea}>
             <h3>Delegar Orden de Mantenimiento</h3>
@@ -240,7 +238,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           </form>
         )}
 
-        {/* Resumen de KPIs de Supervisión */}
         <div className="kpi-grid">
           <div className="kpi-card">
             <span className="kpi-label">Tareas en Curso</span>
@@ -290,7 +287,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           </button>
         </div>
 
-        {/* Lista de Tareas con barras de progreso */}
         <div className="tareas-lista">
           {tareasFiltradas.map((tarea) => (
             <div key={tarea.id} className="tarea-card">
@@ -343,7 +339,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
                 )}
               </div>
 
-              {/* Barra de progreso de supervisión */}
               <div className="tarea-progreso-container">
                 <div className="tarea-progreso-header">
                   <span className="progreso-label">Cumplimiento de la tarea:</span>
@@ -363,7 +358,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
                 </div>
               </div>
 
-              {/* Controles de supervisión del Encargado */}
               <div className="tarea-acciones-supervisor">
                 <span className="supervisor-label">Supervisión:</span>
                 <button

@@ -45,7 +45,7 @@ export default function NotificacionesCompras({
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado-con-accion">
           <div>
-            <span className="badge-seccion gris">Gerencia · RN-09</span>
+            <span className="badge-seccion gris">Gerencia </span>
             <p className="subpantalla-descripcion">
               Canal de avisos ejecutivos y notificaciones automáticas para compras urgentes e insumos de mantenimiento.
             </p>
