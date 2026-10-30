@@ -624,8 +624,7 @@ export default function Home({
                   setPantalla("pedidosCompra");
                 }}
               >
-                
-              </a>
+                </a>
             </>
           )}
 

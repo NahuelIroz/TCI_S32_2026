@@ -126,9 +126,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
 
       <div className="incidencia-form">
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion violeta">
-            RN-03 · RN-04 · Faltante y Urgencia
-          </span>
+          
           <p className="subpantalla-descripcion">
             Reportá faltantes y generá pedidos de compra. La solicitud se despacha con su grado de urgencia a encargados de todos los turnos y a gerencia.
           </p>
@@ -137,7 +135,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
         {repuestosCriticos.length > 0 && (
           <div className="compras-criticos-box">
             <strong className="compras-criticos-titulo">
-              ⚠️ Repuestos con stock bajo o agotado (RN-02: Umbral alcanzado)
+              ⚠️ Repuestos con stock bajo o agotado
             </strong>
             <div className="compras-criticos-lista">
               {repuestosCriticos.map((rep) => (
@@ -157,7 +155,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
                     className="btn-pedir-rapido"
                     onClick={() => handleSeleccionarCritico(rep)}
                   >
-                    + Pedir compra (RN-03)
+                    + Pedir compra
                   </button>
                 </div>
               ))}
@@ -202,7 +200,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
           </div>
 
           <div className="campo">
-            <label htmlFor="prioridad-compra">Grado de urgencia (RN-04)</label>
+            <label htmlFor="prioridad-compra">Grado de urgencia</label>
             <select
               id="prioridad-compra"
               className="input-formulario"
