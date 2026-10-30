@@ -66,7 +66,6 @@ export default function EstadisticasHistoricos({
 
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion gris">Gerencia · Analítica Histórica</span>
           <p className="subpantalla-descripcion">
             Evolución semestral de paradas no programadas, consumo de insumos y costos acumulados.
           </p>
@@ -75,30 +74,11 @@ export default function EstadisticasHistoricos({
         {/* Gráfico Semestral de Reducción de Fallas */}
         <div className="tablero-bloque">
           <div className="tablero-bloque-header">
-            <h3>Tendencia Semestral de Incidencias y Horas de Parada</h3>
-            <span className="badge-seccion verde">-66% de fallas desde Mayo</span>
+            <h3>Tendencia Semestral de Incidencias</h3>
           </div>
-          <p className="tablero-subtexto">
-            Evolución de fallas mecánicas/eléctricas y tiempo total fuera de servicio (horas):
-          </p>
+        
 
-          <div className="historico-barras-grid">
-            {meses.map((m) => (
-              <div key={m.mes} className="barra-columna">
-                <div className="barra-grafico-wrapper">
-                  <div
-                    className="barra-grafico-fill barra-azul"
-                    style={{ height: `${m.fallas * 6}px` }}
-                    title={`${m.fallas} fallas reportadas`}
-                  >
-                    <span className="barra-valor-label">{m.fallas}</span>
-                  </div>
-                </div>
-                <span className="barra-mes-label">{m.mes}</span>
-                <span className="barra-horas-sub">{m.horasParada}h parada</span>
-              </div>
-            ))}
-          </div>
+          
         </div>
 
         {/* Repuestos más consumidos */}
@@ -135,28 +115,7 @@ export default function EstadisticasHistoricos({
           </div>
         </div>
 
-        {/* Desglose de Gastos por Sector */}
-        <div className="tablero-bloque">
-          <h3>Distribución del Presupuesto por Sector de Planta</h3>
-          <div className="sectores-gasto-lista">
-            {costosPorSector.map((sec) => (
-              <div key={sec.sector} className="sector-gasto-item">
-                <div className="sector-gasto-info">
-                  <strong>{sec.sector}</strong>
-                  <span>
-                    {sec.monto} ({sec.porcentaje}%)
-                  </span>
-                </div>
-                <div className="barra-progreso-track">
-                  <div
-                    className="barra-progreso-fill fill-medio"
-                    style={{ width: `${sec.porcentaje}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+        
       </div>
     </div>
   );

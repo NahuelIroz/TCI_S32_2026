@@ -72,7 +72,6 @@ export default function EstadoMaquinas({
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado-con-accion">
           <div>
-            <span className="badge-seccion gris">RN-07 · Parque Industrial</span>
             <p className="subpantalla-descripcion">
               Monitoreo en vivo de telemetría de planta, semáforos de criticidad y condición de funcionamiento.
             </p>
@@ -83,7 +82,7 @@ export default function EstadoMaquinas({
               className="btn-nueva-incidencia"
               onClick={onNuevaMaquina}
             >
-              + Ingresar Máquina (RN-07)
+              + Ingresar Máquina
             </button>
           )}
         </div>
@@ -153,7 +152,6 @@ export default function EstadoMaquinas({
           </div>
         </div>
 
-        {/* Tarjetas de Máquinas */}
         <div className="maquinas-grid-cards">
           {maquinasFiltradas.map((maq) => (
             <div key={maq.id} className="maquina-card">

@@ -50,6 +50,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     "maquinas.consultar",
     "estadisticas.consultar",
     "compras.notificaciones",
+    "compras.gestionar",
   ],
 };
 
@@ -306,10 +307,10 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
     {
       id: "notificaciones-compras",
       permiso: "compras.notificaciones",
-      titulo: "Recibir notificaciones de pedidos de compra.",
-      descripcion: "Avisos de solicitudes de compra urgentes con impacto presupuestario",
-      icono: "bell",
-      color: "slate",
+      titulo: "Aprobar compras y pedidos de repuestos.",
+      descripcion: "Autorizar compras de repuestos, evaluar presupuesto y cotizaciones",
+      icono: "cart-check",
+      color: "green",
     },
   ];
 }

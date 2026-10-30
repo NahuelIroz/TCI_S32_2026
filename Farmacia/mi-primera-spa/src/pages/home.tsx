@@ -703,7 +703,7 @@ export default function Home({
             </>
           )}
 
-          {esGerencia && (
+          {false && esGerencia && (
             <>
               <a
                 className="nav-link"
@@ -763,7 +763,7 @@ export default function Home({
                   setPantalla("notificacionesCompras");
                 }}
               >
-                Notificaciones Compras
+                Aprobar Compras
               </a>
             </>
           )}
@@ -1018,8 +1018,8 @@ export default function Home({
               type="button"
               onClick={() => setPantalla("notificacionesCompras")}
             >
-              <NavIcon name="bell" />
-              <span>Avisos</span>
+              <NavIcon name="compras" />
+              <span>Compras</span>
             </button>
           </>
         )}
