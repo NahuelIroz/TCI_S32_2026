@@ -36,7 +36,6 @@ export default function EscanearQR({ onBack }: EscanearQRProps) {
           async (textoLeido) => {
             if (cancelado) return;
 
-            // Primero detenemos el escáner mientras el DOM está presente
             try {
               if (scanner?.isScanning) {
                 await scanner.stop();
@@ -139,15 +138,9 @@ export default function EscanearQR({ onBack }: EscanearQRProps) {
         </section>
 
         <section className="qr-tarjeta">
-          <div className="qr-icono">
-            <span>▦</span>
-          </div>
 
-          <h2>Escáner de repuestos</h2>
-          <p className="qr-instruccion">
-            Ubicá el código QR dentro del recuadro de la cámara.
-          </p>
-
+          <h2>Ubicá el código QR dentro del recuadro de la cámara.</h2>
+      
           <div className={`qr-visor ${escaneando ? "activo" : ""}`}>
             {escaneando ? (
               <>
