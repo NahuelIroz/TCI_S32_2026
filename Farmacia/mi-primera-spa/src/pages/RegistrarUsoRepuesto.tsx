@@ -282,7 +282,7 @@ export default function RegistrarUsoRepuesto({
               </strong>
             </div>
             <div>
-              <span>Umbral Mínimo (RN-02): </span>
+              <span>Umbral Mínimo: </span>
               <strong>{repuestoActual.minimo} {repuestoActual.unidad}</strong>
             </div>
           </div>
@@ -325,7 +325,7 @@ export default function RegistrarUsoRepuesto({
         )}
 
         <div className="campo">
-          <label htmlFor="cantidad-usada">Cantidad consumida (Entera ≥ 1, RN-01)</label>
+          <label htmlFor="cantidad-usada">Cantidad consumida</label>
           <input
             id="cantidad-usada"
             type="number"
