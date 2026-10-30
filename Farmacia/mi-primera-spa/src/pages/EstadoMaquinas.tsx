@@ -152,7 +152,6 @@ export default function EstadoMaquinas({
           </div>
         </div>
 
-        {/* Tarjetas de Máquinas */}
         <div className="maquinas-grid-cards">
           {maquinasFiltradas.map((maq) => (
             <div key={maq.id} className="maquina-card">

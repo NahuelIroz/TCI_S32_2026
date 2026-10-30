@@ -58,7 +58,7 @@ export default function BuzonNotificaciones({ onBack }: BuzonNotificacionesProps
 
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion verde">Regla RN-09 · Puerto de Notificaciones</span>
+          <span className="badge-seccion verde"> Puerto de Notificaciones</span>
           <p className="subpantalla-descripcion">
             Visualizador de correos electrónicos despachados por el sistema (incidentes, cambios de parte, solicitudes de compra, resolución de fallas y alertas de umbral).
           </p>
