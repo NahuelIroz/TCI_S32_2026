@@ -154,7 +154,6 @@ Historial y estado de las reparaciones </p>
           </div>
         </div>
 
-        {/* Alertas e Incidencias activas */}
         <div className="tablero-bloque">
           <div className="tablero-bloque-header">
             <h3>Fallas en Curso e Incidencias</h3>

@@ -136,7 +136,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           </div>
         )}
 
-        {/* Modal / Acordeón para Delegar Tarea */}
         {mostrarModalDelegar && (
           <form className="formulario-delegar-tarea" onSubmit={handleCrearTarea}>
             <h3>Delegar Orden de Mantenimiento</h3>
@@ -240,7 +239,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           </form>
         )}
 
-        {/* Resumen de KPIs de Supervisión */}
         <div className="kpi-grid">
           <div className="kpi-card">
             <span className="kpi-label">Tareas en Curso</span>
@@ -290,7 +288,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           </button>
         </div>
 
-        {/* Lista de Tareas con barras de progreso */}
         <div className="tareas-lista">
           {tareasFiltradas.map((tarea) => (
             <div key={tarea.id} className="tarea-card">
@@ -343,7 +340,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
                 )}
               </div>
 
-              {/* Barra de progreso de supervisión */}
               <div className="tarea-progreso-container">
                 <div className="tarea-progreso-header">
                   <span className="progreso-label">Cumplimiento de la tarea:</span>
@@ -363,7 +359,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
                 </div>
               </div>
 
-              {/* Controles de supervisión del Encargado */}
               <div className="tarea-acciones-supervisor">
                 <span className="supervisor-label">Supervisión:</span>
                 <button

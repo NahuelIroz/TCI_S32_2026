@@ -78,7 +78,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
     setPedidos([nuevoPedido, ...pedidos]);
     pedidosCompraIniciales.unshift(nuevoPedido);
 
-    // RN-06: Trazabilidad interna
+
     trazabilidadInicial.push({
       id: `TRZ-0${trazabilidadInicial.length + 10}`,
       repuestoCodigo: repuestoActual.codigo,
@@ -93,7 +93,6 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
       detalles: `Pedido generado por faltante / umbral (RN-03). Justificación: ${justificacion}`,
     });
 
-    // RN-04 & RN-09: Notificación por correo a encargados de todos los turnos y gerencia
     servicioNotificaciones.enviarNotificacion(
       "solicitud_compra",
       `🚨 PEDIDO RN-04 [${prioridad.toUpperCase()}]: Compra solicitada para ${repuestoActual.nombre}`,
@@ -231,7 +230,7 @@ export default function PedidosCompra({ onBack, repuestoInicial }: PedidosCompra
           </div>
 
           <button type="submit" className="boton-enviar">
-            Enviar Pedido de Compra (RN-03 / RN-04)
+            Enviar Pedido de Compra 
           </button>
         </form>
 

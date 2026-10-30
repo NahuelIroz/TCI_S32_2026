@@ -47,7 +47,6 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
 
     incidencias.unshift(nueva);
 
-    // RN-09: Notificación por correo de incidente reportado
     servicioNotificaciones.enviarNotificacion(
       "incidente",
       `INCIDENTE RN-09: Falla reportada en ${maquina} (${nueva.codigo})`,
