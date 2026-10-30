@@ -50,7 +50,7 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
     // RN-09: Notificación por correo de incidente reportado
     servicioNotificaciones.enviarNotificacion(
       "incidente",
-      `📋 INCIDENTE RN-09: Falla reportada en ${maquina} (${nueva.codigo})`,
+      `INCIDENTE RN-09: Falla reportada en ${maquina} (${nueva.codigo})`,
       ["mantenimiento@planta.farmacia.com", "supervisores@planta.farmacia.com"],
       `Turno ${turno}: ${descripcion}. Requiere inspección técnica urgente.`
     );

@@ -61,7 +61,6 @@ export default function NotificacionesCompras({
           )}
         </div>
 
-        {/* Resumen de Notificaciones */}
         <div className="kpi-grid">
           <div className="kpi-card">
             <span className="kpi-label">Avisos Pendientes</span>
@@ -80,7 +79,6 @@ export default function NotificacionesCompras({
           </div>
         </div>
 
-        {/* Listado de Notificaciones */}
         <div className="pedidos-lista">
           {pedidos.map((pedido) => (
             <div
