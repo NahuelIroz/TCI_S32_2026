@@ -703,7 +703,7 @@ export default function Home({
             </>
           )}
 
-          {esGerencia && (
+          {false && esGerencia && (
             <>
               <a
                 className="nav-link"
