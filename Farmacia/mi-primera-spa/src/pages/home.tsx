@@ -320,7 +320,6 @@ export default function Home({
 
   const ejecutarAccionPorId = (accionId: string) => {
     switch (accionId) {
-      // Operario
       case "reportar-incidencia":
         abrirReporte();
         break;
@@ -331,7 +330,6 @@ export default function Home({
         setPantalla("scan");
         break;
 
-      // Mantenimiento
       case "ingresar-stock":
         setPantalla("ingresarStock");
         break;
@@ -345,7 +343,6 @@ export default function Home({
         setPantalla("pedidosCompra");
         break;
 
-      // Encargado
       case "gestionar-compras":
         setPantalla("gestionarCompras");
         break;
@@ -362,7 +359,6 @@ export default function Home({
         setPantalla("necesidadesReposicion");
         break;
 
-      // Gerencia
       case "tableros-seguimiento":
         setPantalla("tablerosSeguimiento");
         break;
@@ -822,15 +818,7 @@ export default function Home({
         </nav>
 
         <div className="topbar-acciones-derecha">
-          <button
-            type="button"
-            className="btn-topbar-buzon"
-            onClick={() => setPantalla("buzonCorreos")}
-            title="Bandeja de Correos Electrónicos Despachados (RN-09)"
-          >
-            ✉️ Correos (RN-09)
-          </button>
-
+         
           <button
             className="topbar-user"
             type="button"
