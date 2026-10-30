@@ -8,7 +8,20 @@ import EscanearQR from "./scanner";
 import IngresarStock from "./IngresarStock";
 import RegistrarUsoRepuesto from "./RegistrarUsoRepuesto";
 import PedidosCompra from "./PedidosCompra";
+import GestionCompras from "./GestionCompras";
+import SupervisarTareas from "./SupervisarTareas";
+import LiberarReservas from "./LiberarReservas";
+import NecesidadesReposicion from "./NecesidadesReposicion";
+import TableroSeguimiento from "./TableroSeguimiento";
+import VisualizarIncidencias from "./VisualizarIncidencias";
+import EstadoMaquinas from "./EstadoMaquinas";
+import EstadisticasHistoricos from "./EstadisticasHistoricos";
+import NotificacionesCompras from "./NotificacionesCompras";
+import TrazabilidadRepuesto from "./TrazabilidadRepuesto";
+import AltaMaquinaria from "./AltaMaquinaria";
+import BuzonNotificaciones from "./BuzonNotificaciones";
 
+import type { Repuesto } from "../data/repuestos";
 import {
   PERFILES,
   getAccionesParaRol,
@@ -24,7 +37,20 @@ type Pantalla =
   | "scan"
   | "ingresarStock"
   | "registrarUso"
-  | "pedidosCompra";
+  | "pedidosCompra"
+  | "gestionarCompras"
+  | "cargarStockRecibido"
+  | "supervisarTareas"
+  | "liberarReservas"
+  | "necesidadesReposicion"
+  | "tablerosSeguimiento"
+  | "visualizarIncidencias"
+  | "estadoMaquinas"
+  | "estadisticasHistoricos"
+  | "notificacionesCompras"
+  | "trazabilidad"
+  | "altaMaquinaria"
+  | "buzonCorreos";
 
 interface HomeProps {
   usuario?: PerfilUsuario;
@@ -85,19 +111,97 @@ function ActionSymbol({ name }: { name: TipoIconoAccion }) {
     );
   }
 
+  if (name === "incidents") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M6 5h12a2 2 0 0 1 2 2v13H4V7a2 2 0 0 1 2-2Z" />
+        <path d="M9 5V3h6v2M8 10h8M8 14h8M8 18h5" />
+      </svg>
+    );
+  }
+
+  if (name === "tasks") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+        <rect x="9" y="3" width="6" height="4" rx="1" />
+        <path d="m9 14 2 2 4-4" />
+      </svg>
+    );
+  }
+
+  if (name === "shield-check") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+    );
+  }
+
+  if (name === "dashboard") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="9" rx="1" />
+        <rect x="14" y="3" width="7" height="5" rx="1" />
+        <rect x="14" y="12" width="7" height="9" rx="1" />
+        <rect x="3" y="16" width="7" height="5" rx="1" />
+      </svg>
+    );
+  }
+
+  if (name === "machine") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    );
+  }
+
+  if (name === "stats") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M3 3v18h18" />
+        <path d="m19 9-5 5-4-4-3 3" />
+      </svg>
+    );
+  }
+
+  if (name === "bell") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 5h12a2 2 0 0 1 2 2v13H4V7a2 2 0 0 1 2-2Z" />
-      <path d="M9 5V3h6v2M8 10h8M8 14h8M8 18h5" />
+      <circle cx="9" cy="21" r="1" />
+      <circle cx="20" cy="21" r="1" />
+      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+      <path d="m9 11 2 2 4-4" />
     </svg>
   );
 }
 
-// Íconos de navegación inferior móvil
 function NavIcon({
   name,
 }: {
-  name: "home" | "scan" | "stock" | "tools" | "compras" | "report" | "incidents";
+  name:
+  | "home"
+  | "scan"
+  | "stock"
+  | "tools"
+  | "compras"
+  | "report"
+  | "incidents"
+  | "tasks"
+  | "dashboard"
+  | "machine"
+  | "bell";
 }) {
   if (name === "home") {
     return (
@@ -151,6 +255,45 @@ function NavIcon({
     );
   }
 
+  if (name === "tasks") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+        <rect x="9" y="3" width="6" height="4" rx="1" />
+        <path d="m9 14 2 2 4-4" />
+      </svg>
+    );
+  }
+
+  if (name === "dashboard") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="3" y="3" width="7" height="9" rx="1" />
+        <rect x="14" y="3" width="7" height="5" rx="1" />
+        <rect x="14" y="12" width="7" height="9" rx="1" />
+        <rect x="3" y="16" width="7" height="5" rx="1" />
+      </svg>
+    );
+  }
+
+  if (name === "machine") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    );
+  }
+
+  if (name === "bell") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+      </svg>
+    );
+  }
+
   return (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M6 5h12a2 2 0 0 1 2 2v13H4V7a2 2 0 0 1 2-2Z" />
@@ -164,8 +307,9 @@ export default function Home({
   onCerrarSesion,
 }: HomeProps) {
   const [pantalla, setPantalla] = useState<Pantalla>("home");
-
   const [pantallaAnterior, setPantallaAnterior] = useState<Pantalla>("home");
+  const [repuestoSeleccionadoCodigo, setRepuestoSeleccionadoCodigo] = useState<string>("SKU-6204-2R");
+  const [repuestoParaCompra, setRepuestoParaCompra] = useState<Repuesto | undefined>(undefined);
 
   const acciones = getAccionesParaRol(usuario.rol);
 
@@ -176,32 +320,63 @@ export default function Home({
 
   const ejecutarAccionPorId = (accionId: string) => {
     switch (accionId) {
-      case "ingresar-stock":
-        setPantalla("ingresarStock");
+      // Operario
+      case "reportar-incidencia":
+        abrirReporte();
         break;
-
-      case "consultar-stock":
-        setPantalla("stock");
+      case "mis-incidencias":
+        setPantalla("misIncidencias");
         break;
-
       case "escanear-qr":
         setPantalla("scan");
         break;
 
+      // Mantenimiento
+      case "ingresar-stock":
+        setPantalla("ingresarStock");
+        break;
+      case "consultar-stock":
+        setPantalla("stock");
+        break;
       case "registrar-uso":
         setPantalla("registrarUso");
         break;
-
       case "pedidos-compra":
         setPantalla("pedidosCompra");
         break;
 
-      case "reportar-incidencia":
-        abrirReporte();
+      // Encargado
+      case "gestionar-compras":
+        setPantalla("gestionarCompras");
+        break;
+      case "cargar-stock-recibido":
+        setPantalla("cargarStockRecibido");
+        break;
+      case "supervisar-tareas":
+        setPantalla("supervisarTareas");
+        break;
+      case "liberar-reservas":
+        setPantalla("liberarReservas");
+        break;
+      case "necesidades-reposicion":
+        setPantalla("necesidadesReposicion");
         break;
 
-      case "mis-incidencias":
-        setPantalla("misIncidencias");
+      // Gerencia
+      case "tableros-seguimiento":
+        setPantalla("tablerosSeguimiento");
+        break;
+      case "visualizar-incidencias":
+        setPantalla("visualizarIncidencias");
+        break;
+      case "estado-maquinas":
+        setPantalla("estadoMaquinas");
+        break;
+      case "estadisticas-historicos":
+        setPantalla("estadisticasHistoricos");
+        break;
+      case "notificaciones-compras":
+        setPantalla("notificacionesCompras");
         break;
 
       default:
@@ -209,23 +384,127 @@ export default function Home({
     }
   };
 
+  if (pantalla === "trazabilidad") {
+    return (
+      <TrazabilidadRepuesto
+        onBack={() => setPantalla("home")}
+        repuestoCodigoInicial={repuestoSeleccionadoCodigo}
+      />
+    );
+  }
+
+  if (pantalla === "altaMaquinaria") {
+    return (
+      <AltaMaquinaria
+        onBack={() => setPantalla("estadoMaquinas")}
+        onExito={() => setPantalla("estadoMaquinas")}
+      />
+    );
+  }
+
+  if (pantalla === "buzonCorreos") {
+    return <BuzonNotificaciones onBack={() => setPantalla("home")} />;
+  }
+
   if (pantalla === "ingresarStock") {
     return <IngresarStock onBack={() => setPantalla("home")} />;
   }
 
+  if (pantalla === "cargarStockRecibido") {
+    return (
+      <IngresarStock
+        onBack={() => setPantalla("home")}
+        titulo="Cargar el stock recibido y sus ubicaciones"
+        subtitulo="RN-08 · Carga de Compra y Ubicaciones"
+      />
+    );
+  }
+
+  if (pantalla === "gestionarCompras") {
+    return <GestionCompras onBack={() => setPantalla("home")} />;
+  }
+
+  if (pantalla === "supervisarTareas") {
+    return <SupervisarTareas onBack={() => setPantalla("home")} />;
+  }
+
+  if (pantalla === "liberarReservas") {
+    return <LiberarReservas onBack={() => setPantalla("home")} />;
+  }
+
+  if (pantalla === "necesidadesReposicion") {
+    return (
+      <NecesidadesReposicion
+        onBack={() => setPantalla("home")}
+        onIrACompras={() => setPantalla("gestionarCompras")}
+      />
+    );
+  }
+
+  if (pantalla === "tablerosSeguimiento") {
+    return (
+      <TableroSeguimiento
+        onBack={() => setPantalla("home")}
+        onVerMaquinas={() => setPantalla("estadoMaquinas")}
+        onVerIncidencias={() => setPantalla("visualizarIncidencias")}
+      />
+    );
+  }
+
+  if (pantalla === "visualizarIncidencias") {
+    return <VisualizarIncidencias onBack={() => setPantalla("home")} />;
+  }
+
+  if (pantalla === "estadoMaquinas") {
+    return (
+      <EstadoMaquinas
+        onBack={() => setPantalla("home")}
+        onNuevaMaquina={() => setPantalla("altaMaquinaria")}
+      />
+    );
+  }
+
+  if (pantalla === "estadisticasHistoricos") {
+    return <EstadisticasHistoricos onBack={() => setPantalla("home")} />;
+  }
+
+  if (pantalla === "notificacionesCompras") {
+    return <NotificacionesCompras onBack={() => setPantalla("home")} />;
+  }
+
   if (pantalla === "registrarUso") {
-    return <RegistrarUsoRepuesto onBack={() => setPantalla("home")} />;
+    return (
+      <RegistrarUsoRepuesto
+        onBack={() => setPantalla("home")}
+        onGenerarPedidoCompra={(rep) => {
+          setRepuestoParaCompra(rep);
+          setPantalla("pedidosCompra");
+        }}
+      />
+    );
   }
 
   if (pantalla === "pedidosCompra") {
-    return <PedidosCompra onBack={() => setPantalla("home")} />;
+    return (
+      <PedidosCompra
+        onBack={() => setPantalla("home")}
+        repuestoInicial={repuestoParaCompra}
+      />
+    );
   }
 
   if (pantalla === "stock") {
     return (
       <ConsultarStock
         onBack={() => setPantalla("home")}
-        onComprar={() => setPantalla("pedidosCompra")}
+        onComprar={(rep) => {
+          setRepuestoParaCompra(rep);
+          setPantalla("pedidosCompra");
+        }}
+        onVerTrazabilidad={(rep) => {
+          setRepuestoSeleccionadoCodigo(rep.codigo);
+          setPantalla("trazabilidad");
+        }}
       />
     );
   }
@@ -249,8 +528,24 @@ export default function Home({
     );
   }
 
-
   const esMantenimiento = usuario.rol === "MANTENIMIENTO";
+  const esOperario = usuario.rol === "OPERARIO";
+  const esEncargado = usuario.rol === "ENCARGADO";
+  const esGerencia = usuario.rol === "GERENCIA";
+
+  const getBadgeClass = () => {
+    if (esEncargado) return "badge-administrar";
+    if (esGerencia) return "badge-solo-lectura";
+    if (esMantenimiento) return "badge-operar-stock";
+    return "badge-operario";
+  };
+
+  const getBrandTitle = () => {
+    if (esEncargado) return "ENCARGADO";
+    if (esGerencia) return "GERENCIA";
+    if (esOperario) return "OPERACIONES";
+    return "MANTENIMIENTO";
+  };
 
   return (
     <div className="pharma-app">
@@ -258,7 +553,7 @@ export default function Home({
         <a
           className="brand"
           href="#inicio"
-          aria-label="Mantenimiento Pharma, inicio"
+          aria-label="Sistema de Gestión Pharma, inicio"
           onClick={(e) => {
             e.preventDefault();
             setPantalla("home");
@@ -268,9 +563,10 @@ export default function Home({
             +
           </span>
           <span>
-            <strong>MANTENIMIENTO</strong>
+            <strong>{getBrandTitle()}</strong>
           </span>
         </a>
+
 
         <nav className="desktop-nav" aria-label="Navegación principal">
           <a
@@ -284,64 +580,7 @@ export default function Home({
             Inicio
           </a>
 
-          {esMantenimiento ? (
-            <>
-              <a
-                className="nav-link"
-                href="#stock"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("stock");
-                }}
-              >
-                Existencias
-              </a>
-
-              <a
-                className="nav-link"
-                href="#scanner"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("scan");
-                }}
-              >
-                Escanear QR
-              </a>
-
-              <a
-                className="nav-link"
-                href="#ingreso"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("ingresarStock");
-                }}
-              >
-                Ingresar Stock
-              </a>
-
-              <a
-                className="nav-link"
-                href="#uso"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("registrarUso");
-                }}
-              >
-                Uso en Reparación
-              </a>
-
-              <a
-                className="nav-link"
-                href="#compras"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("pedidosCompra");
-                }}
-              >
-                Compras
-              </a>
-            </>
-          ) : (
+          {esOperario && (
             <>
               <a
                 className="nav-link"
@@ -353,7 +592,6 @@ export default function Home({
               >
                 Reportar Incidencia
               </a>
-
               <a
                 className="nav-link"
                 href="#mis-incidencias"
@@ -364,7 +602,6 @@ export default function Home({
               >
                 Mis Incidencias
               </a>
-
               <a
                 className="nav-link"
                 href="#scanner"
@@ -377,25 +614,241 @@ export default function Home({
               </a>
             </>
           )}
+
+          {esMantenimiento && (
+            <>
+              <a
+                className="nav-link"
+                href="#stock"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPantalla("stock");
+                }}
+              >
+                Existencias
+              </a>
+              <a
+                className="nav-link"
+                href="#scanner"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPantalla("scan");
+                }}
+              >
+                Escanear QR
+              </a>
+              <a
+                className="nav-link"
+                href="#ingreso"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPantalla("ingresarStock");
+                }}
+              >
+                Ingresar Stock
+              </a>
+              <a
+                className="nav-link"
+                href="#uso"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPantalla("registrarUso");
+                }}
+              >
+                Uso en Reparación
+              </a>
+              <a
+                className="nav-link"
+                href="#trazabilidad"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPantalla("trazabilidad");
+                }}
+              >
+                Trazabilidad (RN-06)
+              </a>
+              <a
+                className="nav-link"
+                href="#compras"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setPantalla("pedidosCompra");
+                }}
+              >
+                Compras
+              </a>
+            </>
+          )}
+
+          {esEncargado && (
+            <>
+              <a
+                className="nav-link"
+                href="#compras"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("gestionarCompras");
+                }}
+              >
+                Gestionar Compras
+              </a>
+              <a
+                className="nav-link"
+                href="#stock-recibido"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("cargarStockRecibido");
+                }}
+              >
+                Stock Recibido
+              </a>
+              <a
+                className="nav-link"
+                href="#supervisar"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("supervisarTareas");
+                }}
+              >
+                Supervisar Tareas
+              </a>
+              <a
+                className="nav-link"
+                href="#reservas"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("liberarReservas");
+                }}
+              >
+                Liberar Reservas
+              </a>
+              <a
+                className="nav-link"
+                href="#reposicion"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("necesidadesReposicion");
+                }}
+              >
+                Reposición
+              </a>
+              <a
+                className="nav-link"
+                href="#trazabilidad"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("trazabilidad");
+                }}
+              >
+                Trazabilidad (RN-06)
+              </a>
+              <a
+                className="nav-link"
+                href="#alta-maquina"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("altaMaquinaria");
+                }}
+              >
+                Nueva Máquina (RN-07)
+              </a>
+            </>
+          )}
+
+          {esGerencia && (
+            <>
+              <a
+                className="nav-link"
+                href="#tableros"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("tablerosSeguimiento");
+                }}
+              >
+                Tableros
+              </a>
+              <a
+                className="nav-link"
+                href="#incidencias"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("visualizarIncidencias");
+                }}
+              >
+                Incidencias & Plan
+              </a>
+              <a
+                className="nav-link"
+                href="#maquinas"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("estadoMaquinas");
+                }}
+              >
+                Estado Máquinas
+              </a>
+              <a
+                className="nav-link"
+                href="#trazabilidad"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("trazabilidad");
+                }}
+              >
+                Trazabilidad (RN-06)
+              </a>
+              <a
+                className="nav-link"
+                href="#estadisticas"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("estadisticasHistoricos");
+                }}
+              >
+                Estadísticas
+              </a>
+              <a
+                className="nav-link"
+                href="#notificaciones"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("notificacionesCompras");
+                }}
+              >
+                Notificaciones Compras
+              </a>
+            </>
+          )}
         </nav>
 
-        <button
-          className="topbar-user"
-          type="button"
-          onClick={() => {
-            if (onCerrarSesion && confirm("¿Deseás cerrar la sesión actual?")) {
-              onCerrarSesion();
-            }
-          }}
-          aria-label={`Perfil de ${usuario.nombre}. Clic para cerrar sesión`}
-          title="Clic para cerrar sesión"
-        >
-          <span className="avatar avatar-small">{usuario.avatar}</span>
-          <span className="topbar-user-name">{usuario.nombre}</span>
-          <span className="chevron" aria-hidden="true">
-            ⌄
-          </span>
-        </button>
+        <div className="topbar-acciones-derecha">
+          <button
+            type="button"
+            className="btn-topbar-buzon"
+            onClick={() => setPantalla("buzonCorreos")}
+            title="Bandeja de Correos Electrónicos Despachados (RN-09)"
+          >
+            ✉️ Correos (RN-09)
+          </button>
+
+          <button
+            className="topbar-user"
+            type="button"
+            onClick={() => {
+              if (onCerrarSesion && confirm("¿Deseás cerrar la sesión actual?")) {
+                onCerrarSesion();
+              }
+            }}
+            aria-label={`Perfil de ${usuario.nombre}. Clic para cerrar sesión`}
+            title="Clic para cerrar sesión"
+          >
+            <span className="avatar avatar-small">{usuario.avatar}</span>
+            <span className="topbar-user-name">{usuario.nombre}</span>
+            <span className="chevron" aria-hidden="true">
+              ⌄
+            </span>
+          </button>
+        </div>
       </header>
 
       <main id="inicio" className="dashboard">
@@ -405,7 +858,13 @@ export default function Home({
 
             <div>
               <p className="eyebrow">
-                {esMantenimiento ? "Panel de mantenimiento" : "Panel de operaciones"}
+                {esEncargado
+                  ? "Panel de gestión y administración de mantenimiento"
+                  : esGerencia
+                    ? "Panel ejecutivo de control y monitoreo"
+                    : esMantenimiento
+                      ? "Panel de operaciones de mantenimiento"
+                      : "Panel de operaciones de planta"}
               </p>
               <h1>Hola, {usuario.nombre}</h1>
 
@@ -413,7 +872,9 @@ export default function Home({
                 <p className="user-role">
                   <strong>{usuario.titulo}</strong> <span>·</span> {usuario.turno}
                 </p>
-                <span className="user-role-badge">{usuario.etiqueta}</span>
+                <span className={`user-role-badge ${getBadgeClass()}`}>
+                  {usuario.etiqueta}
+                </span>
               </div>
             </div>
           </div>
@@ -423,7 +884,13 @@ export default function Home({
           <div className="section-heading">
             <div>
               <p className="eyebrow">
-                {esMantenimiento ? "Actividades de mantenimiento" : "Acciones de operario"}
+                {esEncargado
+                  ? "Funciones de gestión técnica"
+                  : esGerencia
+                    ? "Acciones gerenciales y auditoría"
+                    : esMantenimiento
+                      ? "Actividades de mantenimiento"
+                      : "Acciones de operario"}
               </p>
               <h2>¿Qué necesitás hacer?</h2>
             </div>
@@ -459,11 +926,12 @@ export default function Home({
 
         <footer className="dashboard-footer">
           <span>
-            <span className="footer-cross">+</span> Mantenimiento Pharma · Perfil {usuario.titulo}
+            <span className="footer-cross">+</span> Mantenimiento Pharma · Perfil {usuario.titulo} · Reglas RN-01 a RN-10 activas
           </span>
         </footer>
       </main>
 
+      {/* Navegación inferior móvil adaptativa */}
       <nav className="mobile-nav" aria-label="Navegación inferior">
         <a
           className="mobile-nav-item selected"
@@ -477,45 +945,7 @@ export default function Home({
           <span>Inicio</span>
         </a>
 
-        {esMantenimiento ? (
-          <>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("stock")}
-            >
-              <NavIcon name="stock" />
-              <span>Stock</span>
-            </button>
-
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("scan")}
-            >
-              <NavIcon name="scan" />
-              <span>Escanear</span>
-            </button>
-
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("registrarUso")}
-            >
-              <NavIcon name="tools" />
-              <span>Uso</span>
-            </button>
-
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("pedidosCompra")}
-            >
-              <NavIcon name="compras" />
-              <span>Compras</span>
-            </button>
-          </>
-        ) : (
+        {esOperario && (
           <>
             <button
               className="mobile-nav-item"
@@ -525,7 +955,6 @@ export default function Home({
               <NavIcon name="report" />
               <span>Reportar</span>
             </button>
-
             <button
               className="mobile-nav-item"
               type="button"
@@ -534,7 +963,6 @@ export default function Home({
               <NavIcon name="incidents" />
               <span>Incidencias</span>
             </button>
-
             <button
               className="mobile-nav-item"
               type="button"
@@ -542,6 +970,117 @@ export default function Home({
             >
               <NavIcon name="scan" />
               <span>Escanear</span>
+            </button>
+          </>
+        )}
+
+        {esMantenimiento && (
+          <>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("stock")}
+            >
+              <NavIcon name="stock" />
+              <span>Stock</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("scan")}
+            >
+              <NavIcon name="scan" />
+              <span>Escanear</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("registrarUso")}
+            >
+              <NavIcon name="tools" />
+              <span>Uso</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("pedidosCompra")}
+            >
+              <NavIcon name="compras" />
+              <span>Compras</span>
+            </button>
+          </>
+        )}
+
+        {esEncargado && (
+          <>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("gestionarCompras")}
+            >
+              <NavIcon name="compras" />
+              <span>Compras</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("supervisarTareas")}
+            >
+              <NavIcon name="tasks" />
+              <span>Tareas</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("liberarReservas")}
+            >
+              <NavIcon name="stock" />
+              <span>Reservas</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("necesidadesReposicion")}
+            >
+              <NavIcon name="tools" />
+              <span>Reposición</span>
+            </button>
+          </>
+        )}
+
+        {esGerencia && (
+          <>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("tablerosSeguimiento")}
+            >
+              <NavIcon name="dashboard" />
+              <span>Tableros</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("visualizarIncidencias")}
+            >
+              <NavIcon name="incidents" />
+              <span>Incidencias</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("estadoMaquinas")}
+            >
+              <NavIcon name="machine" />
+              <span>Máquinas</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("notificacionesCompras")}
+            >
+              <NavIcon name="bell" />
+              <span>Avisos</span>
             </button>
           </>
         )}

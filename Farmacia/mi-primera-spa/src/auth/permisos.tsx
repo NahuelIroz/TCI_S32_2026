@@ -15,7 +15,10 @@ export type Permiso =
   | "compras.gestionar"
   | "reservas.liberar"
   | "tareas.supervisar"
-  | "tableros.consultar";
+  | "tableros.consultar"
+  | "maquinas.consultar"
+  | "estadisticas.consultar"
+  | "compras.notificaciones";
 
 export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
   OPERARIO: [
@@ -33,15 +36,20 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
   ],
 
   ENCARGADO: [
-    "stock.consultar",
-    "stock.ingresar",
     "compras.gestionar",
-    "reservas.liberar",
+    "stock.ingresar",
     "tareas.supervisar",
+    "reservas.liberar",
+    "stock.consultar",
+    "maquinas.consultar",
   ],
 
   GERENCIA: [
     "tableros.consultar",
+    "incidencias.consultar",
+    "maquinas.consultar",
+    "estadisticas.consultar",
+    "compras.notificaciones",
   ],
 };
 
@@ -64,6 +72,16 @@ export interface PerfilUsuario {
 }
 
 export const PERFILES: Record<string, PerfilUsuario> = {
+  operario: {
+    id: "operario",
+    usuario: "operario",
+    nombre: "Juan Pérez",
+    rol: "OPERARIO",
+    titulo: "Operario de planta",
+    etiqueta: "",
+    turno: "Turno Mañana",
+    avatar: "JP",
+  },
   mantenimiento: {
     id: "mantenimiento",
     usuario: "mantenimiento",
@@ -74,28 +92,37 @@ export const PERFILES: Record<string, PerfilUsuario> = {
     turno: "Turno Mañana",
     avatar: "EM",
   },
-  operario: {
-    id: "operario",
-    usuario: "operario",
-    nombre: "Juan Pérez",
-    rol: "OPERARIO",
-    titulo: "Operario de planta",
-    etiqueta: "Reportar incidencias",
-    turno: "Turno Mañana",
-    avatar: "JP",
+  encargado: {
+    id: "encargado",
+    usuario: "encargado",
+    nombre: "Ing. Martín Bianchi",
+    rol: "ENCARGADO",
+    titulo: "Encargado de mantenimiento",
+    etiqueta: "Administrar",
+    turno: "Turno Central",
+    avatar: "MB",
+  },
+  gerencia: {
+    id: "gerencia",
+    usuario: "gerencia",
+    nombre: "Lic. Valeria Rossi",
+    rol: "GERENCIA",
+    titulo: "Gerencia / Administración",
+    etiqueta: "Solo lectura",
+    turno: "Sede Central",
+    avatar: "VR",
   },
   admin: {
     id: "admin",
     usuario: "admin",
-    nombre: "Carlos Gómez",
-    rol: "MANTENIMIENTO",
-    titulo: "Empleado de mantenimiento",
-    etiqueta: "Operar stock",
-    turno: "Turno Mañana",
-    avatar: "EM",
+    nombre: "Ing. Martín Bianchi",
+    rol: "ENCARGADO",
+    titulo: "Encargado de mantenimiento",
+    etiqueta: "Administrar",
+    turno: "Turno Central",
+    avatar: "MB",
   },
 };
-
 
 export type TipoIconoAccion =
   | "stock-in"
@@ -104,7 +131,14 @@ export type TipoIconoAccion =
   | "tools"
   | "compras"
   | "report"
-  | "incidents";
+  | "incidents"
+  | "tasks"
+  | "shield-check"
+  | "dashboard"
+  | "machine"
+  | "stats"
+  | "bell"
+  | "cart-check";
 
 export interface AccionPerfil {
   id: string;
@@ -112,7 +146,7 @@ export interface AccionPerfil {
   titulo: string;
   descripcion: string;
   icono: TipoIconoAccion;
-  color: "blue" | "green" | "purple" | "orange" | "teal";
+  color: "blue" | "green" | "purple" | "orange" | "teal" | "slate";
 }
 
 export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
@@ -145,46 +179,137 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
     ];
   }
 
+  if (rol === "MANTENIMIENTO") {
+    return [
+      {
+        id: "ingresar-stock",
+        permiso: "stock.ingresar",
+        titulo: "Ingresar repuestos al almacén",
+        descripcion: "Alta y recepción de repuestos en depósito",
+        icono: "stock-in",
+        color: "green",
+      },
+      {
+        id: "consultar-stock",
+        permiso: "stock.consultar",
+        titulo: "Consultar existencias y ubicaciones",
+        descripcion: "Buscar piezas, stock disponible y estanterías",
+        icono: "stock",
+        color: "blue",
+      },
+      {
+        id: "escanear-qr",
+        permiso: "maquinas.escanear",
+        titulo: "Escanear códigos QR o de barras",
+        descripcion: "Identificar piezas o máquinas con la cámara",
+        icono: "scan",
+        color: "teal",
+      },
+      {
+        id: "registrar-uso",
+        permiso: "reparaciones.registrar_uso",
+        titulo: "Registrar repuestos en reparación",
+        descripcion: "Descontar repuestos y cantidades utilizadas",
+        icono: "tools",
+        color: "orange",
+      },
+      {
+        id: "pedidos-compra",
+        permiso: "compras.crear",
+        titulo: "Reportar faltantes y pedidos de compra",
+        descripcion: "Generar solicitudes de reposición de materiales",
+        icono: "compras",
+        color: "purple",
+      },
+    ];
+  }
+
+  if (rol === "ENCARGADO") {
+    return [
+      {
+        id: "gestionar-compras",
+        permiso: "compras.gestionar",
+        titulo: "Gestionar la lista de compras.",
+        descripcion: "Revisar cotizaciones, autorizar o rechazar solicitudes de compra",
+        icono: "cart-check",
+        color: "green",
+      },
+      {
+        id: "cargar-stock-recibido",
+        permiso: "stock.ingresar",
+        titulo: "Cargar el stock recibido y sus ubicaciones.",
+        descripcion: "Registrar remitos de ingreso y asignar ubicación física en depósito",
+        icono: "stock-in",
+        color: "blue",
+      },
+      {
+        id: "supervisar-tareas",
+        permiso: "tareas.supervisar",
+        titulo: "Delegar tareas y supervisar su cumplimiento.",
+        descripcion: "Asignar trabajos a técnicos y auditar avance de preventivos",
+        icono: "tasks",
+        color: "orange",
+      },
+      {
+        id: "liberar-reservas",
+        permiso: "reservas.liberar",
+        titulo: "Autorizar la liberación de repuestos reservados.",
+        descripcion: "Aprobación formal de piezas retenidas para mantenimiento (RN-05)",
+        icono: "shield-check",
+        color: "purple",
+      },
+      {
+        id: "necesidades-reposicion",
+        permiso: "stock.consultar",
+        titulo: "Consultar pedidos y necesidades de reposición.",
+        descripcion: "Monitorear faltantes críticos, consumo proyectado y puntos de reorden",
+        icono: "stock",
+        color: "teal",
+      },
+    ];
+  }
+
+  // GERENCIA
   return [
     {
-      id: "ingresar-stock",
-      permiso: "stock.ingresar",
-      titulo: "Ingresar repuestos al almacén",
-      descripcion: "Alta y recepción de repuestos en depósito",
-      icono: "stock-in",
-      color: "green",
-    },
-    {
-      id: "consultar-stock",
-      permiso: "stock.consultar",
-      titulo: "Consultar existencias y ubicaciones",
-      descripcion: "Buscar piezas, stock disponible y estanterías",
-      icono: "stock",
+      id: "tableros-seguimiento",
+      permiso: "tableros.consultar",
+      titulo: "Consultar tableros de seguimiento.",
+      descripcion: "Indicadores ejecutivos, disponibilidad global y cumplimiento OEE",
+      icono: "dashboard",
       color: "blue",
     },
     {
-      id: "escanear-qr",
-      permiso: "maquinas.escanear",
-      titulo: "Escanear códigos QR o de barras",
-      descripcion: "Identificar piezas o máquinas con la cámara",
-      icono: "scan",
-      color: "teal",
-    },
-    {
-      id: "registrar-uso",
-      permiso: "reparaciones.registrar_uso",
-      titulo: "Registrar repuestos en reparación",
-      descripcion: "Descontar repuestos y cantidades utilizadas",
-      icono: "tools",
+      id: "visualizar-incidencias",
+      permiso: "incidencias.consultar",
+      titulo: "Visualizar incidencias y reparaciones planificadas.",
+      descripcion: "Seguimiento en tiempo real de paradas y calendario de trabajos",
+      icono: "incidents",
       color: "orange",
     },
     {
-      id: "pedidos-compra",
-      permiso: "compras.crear",
-      titulo: "Reportar faltantes y pedidos de compra",
-      descripcion: "Generar solicitudes de reposición de materiales",
-      icono: "compras",
+      id: "estado-maquinas",
+      permiso: "maquinas.consultar",
+      titulo: "Consultar el estado de las máquinas.",
+      descripcion: "Parque de maquinaria con telemetría, semáforo operativo y criticidad",
+      icono: "machine",
+      color: "teal",
+    },
+    {
+      id: "estadisticas-historicos",
+      permiso: "estadisticas.consultar",
+      titulo: "Ver estadísticas e históricos.",
+      descripcion: "Métricas MTTR/MTBF, tasa de averías y costos de repuestos acumulados",
+      icono: "stats",
       color: "purple",
+    },
+    {
+      id: "notificaciones-compras",
+      permiso: "compras.notificaciones",
+      titulo: "Recibir notificaciones de pedidos de compra.",
+      descripcion: "Avisos de solicitudes de compra urgentes con impacto presupuestario",
+      icono: "bell",
+      color: "slate",
     },
   ];
 }

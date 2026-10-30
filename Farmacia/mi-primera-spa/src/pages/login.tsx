@@ -31,13 +31,7 @@ export function Login() {
     }
 
     if (p !== "1234") {
-      setErrorMensaje("Contraseña incorrecta.");
-      return;
-    }
-
-    if (u === "mantenimiento" || u === "admin") {
-      setErrorMensaje("");
-      setPerfilActivo(PERFILES.mantenimiento);
+      setErrorMensaje("Contraseña incorrecta. (Prueba con '1234')");
       return;
     }
 
@@ -47,7 +41,27 @@ export function Login() {
       return;
     }
 
-    setErrorMensaje("Usuario no válido. Los usuarios registrados son 'operario' y 'mantenimiento'.");
+    if (u === "mantenimiento") {
+      setErrorMensaje("");
+      setPerfilActivo(PERFILES.mantenimiento);
+      return;
+    }
+
+    if (u === "encargado" || u === "admin") {
+      setErrorMensaje("");
+      setPerfilActivo(PERFILES.encargado);
+      return;
+    }
+
+    if (u === "gerencia") {
+      setErrorMensaje("");
+      setPerfilActivo(PERFILES.gerencia);
+      return;
+    }
+
+    setErrorMensaje(
+      "Usuario no válido. Usuarios habilitados: 'operario', 'mantenimiento', 'encargado' o 'gerencia'."
+    );
   };
 
   if (perfilActivo) {
@@ -97,7 +111,7 @@ export function Login() {
           <input
             id="usuario"
             type="text"
-            placeholder="operario o mantenimiento"
+            placeholder="operario, mantenimiento, encargado o gerencia"
             value={usuario}
             onChange={(e) => {
               setUsuario(e.target.value);
@@ -118,15 +132,19 @@ export function Login() {
           />
 
           {errorMensaje && (
-            <p className="error" role="alert">
+            <p className="login-error-message" role="alert">
               {errorMensaje}
             </p>
           )}
 
-          <button type="submit">Ingresar</button>
-
-          <a href="#">¿Olvidaste tu contraseña?</a>
+          <button type="submit">Iniciar Sesión</button>
         </form>
+
+        <div className="login-hint">
+          <small>
+            Contraseña de demostración: <strong>1234</strong>
+          </small>
+        </div>
       </div>
     </main>
   );
