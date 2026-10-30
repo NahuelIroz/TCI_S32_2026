@@ -44,31 +44,9 @@ export default function TableroSeguimiento({
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado">
           <p className="subpantalla-descripcion">
-Historial y estado de las reparaciones </p>
+Estado de las reparaciones </p>
         </div>
 
-        <div className="kpi-grid">
-          <div className="kpi-card">
-            <span className="kpi-label">OEE Global de Planta</span>
-            <strong className="kpi-value text-green">{oeePromedio}%</strong>
-            <span className="kpi-desc">Meta objetivo: &gt; 80%</span>
-          </div>
-          <div className="kpi-card">
-            <span className="kpi-label">Disponibilidad de Líneas</span>
-            <strong className="kpi-value text-blue">91.4%</strong>
-            <span className="kpi-desc">Tiempo productivo real</span>
-          </div>
-          <div className="kpi-card">
-            <span className="kpi-label">MTBF (Tiempo Medio Entre Fallas)</span>
-            <strong className="kpi-value text-purple">148 hs</strong>
-            <span className="kpi-desc">+12% respecto al mes anterior</span>
-          </div>
-          <div className="kpi-card">
-            <span className="kpi-label">MTTR (Tiempo Medio Reparación)</span>
-            <strong className="kpi-value text-amber">1.6 hs</strong>
-            <span className="kpi-desc">Promedio de intervención técnica</span>
-          </div>
-        </div>
 
         <div className="tablero-bloque">
           <div className="tablero-bloque-header">
@@ -104,55 +82,7 @@ Historial y estado de las reparaciones </p>
           </div>
         </div>
 
-        <div className="tablero-bloque">
-          <h3>Estrategia de Mantenimiento (Preventivo vs Correctivo)</h3>
-          <p className="tablero-subtexto">
-            La planta opera con un enfoque proactivo:{" "}
-            <strong>
-              {Math.round(
-                (preventivosCount / (preventivosCount + correctivosCount || 1)) *
-                  100
-              )}
-              % Preventivo
-            </strong>{" "}
-            vs{" "}
-            <strong>
-              {Math.round(
-                (correctivosCount / (preventivosCount + correctivosCount || 1)) *
-                  100
-              )}
-              % Correctivo
-            </strong>
-            .
-          </p>
-
-          <div className="barra-comparativa">
-            <div
-              className="barra-parte barra-verde"
-              style={{
-                width: `${Math.round(
-                  (preventivosCount /
-                    (preventivosCount + correctivosCount || 1)) *
-                    100
-                )}%`,
-              }}
-            >
-              Preventivo ({preventivosCount})
-            </div>
-            <div
-              className="barra-parte barra-naranja"
-              style={{
-                width: `${Math.round(
-                  (correctivosCount /
-                    (preventivosCount + correctivosCount || 1)) *
-                    100
-                )}%`,
-              }}
-            >
-              Correctivo ({correctivosCount})
-            </div>
-          </div>
-        </div>
+       
 
         <div className="tablero-bloque">
           <div className="tablero-bloque-header">
