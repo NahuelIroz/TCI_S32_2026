@@ -197,9 +197,7 @@ export default function RegistrarUsoRepuesto({
 
       <form className="incidencia-form" onSubmit={handleSubmit}>
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion naranja">
-             Descuento y Reservas
-          </span>
+        
           <p className="subpantalla-descripcion">
             Descontá del stock físico las partes utilizadas (≥ 1). Los repuestos retenidos por reserva no pueden usarse para otra máquina sin autorización.
           </p>
