@@ -55,7 +55,6 @@ export default function GestionCompras({ onBack }: GestionComprasProps) {
 
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion verde">Administrar · Compras</span>
           <p className="subpantalla-descripcion">
             Revisión, aprobación y cotización de requerimientos de compra y reposición para planta.
           </p>

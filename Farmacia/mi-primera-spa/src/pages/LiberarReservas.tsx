@@ -39,7 +39,6 @@ export default function LiberarReservas({ onBack }: LiberarReservasProps) {
       )
     );
 
-    // Actualizar globalmente
     const gIndex = reservasIniciales.findIndex((r) => r.id === reservaSeleccionada.id);
     if (gIndex !== -1) {
       reservasIniciales[gIndex].estado = "Liberada";
@@ -47,7 +46,6 @@ export default function LiberarReservas({ onBack }: LiberarReservasProps) {
       reservasIniciales[gIndex].fechaLiberacion = "Hoy";
     }
 
-    // RN-06: Trazabilidad
     trazabilidadInicial.push({
       id: `TRZ-0${trazabilidadInicial.length + 10}`,
       repuestoCodigo: reservaSeleccionada.repuestoCodigo,
@@ -63,7 +61,6 @@ export default function LiberarReservas({ onBack }: LiberarReservasProps) {
       maquina: reservaSeleccionada.maquina,
     });
 
-    // RN-05 & RN-09: Aviso inmediato del cambio y su impacto sobre lo planificado
     servicioNotificaciones.enviarNotificacion(
       "liberacion_reserva",
       `⚠️ AVISO RN-05: Liberación autorizada de ${reservaSeleccionada.repuestoNombre} (${reservaSeleccionada.codigo})`,
@@ -102,7 +99,6 @@ export default function LiberarReservas({ onBack }: LiberarReservasProps) {
 
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion verde">Administrar · RN-05</span>
           <p className="subpantalla-descripcion">
             Autorizá formalmente la salida de repuestos críticos retenidos para paradas de planta programadas.
           </p>
@@ -159,11 +155,7 @@ export default function LiberarReservas({ onBack }: LiberarReservasProps) {
             <strong className="kpi-value text-green">{reservasLiberadas.length}</strong>
             <span className="kpi-desc">Disponibles para entrega técnica</span>
           </div>
-          <div className="kpi-card">
-            <span className="kpi-label">Protocolo de Control</span>
-            <strong className="kpi-value text-blue">RN-05</strong>
-            <span className="kpi-desc">Firma digital de Encargado</span>
-          </div>
+          
         </div>
 
         <div className="pedidos-lista">
@@ -234,7 +226,7 @@ export default function LiberarReservas({ onBack }: LiberarReservasProps) {
                     className="btn-accion btn-aprobar"
                     onClick={() => handleAutorizar(res)}
                   >
-                    🔓 Autorizar Liberación Inmediata
+                     Autorizar Liberación Inmediata
                   </button>
                 ) : (
                   <span className="estado-finalizado-label">

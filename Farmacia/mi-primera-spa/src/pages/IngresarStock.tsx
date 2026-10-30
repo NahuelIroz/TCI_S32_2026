@@ -173,7 +173,7 @@ export default function IngresarStock({
         )}
 
         <div className="campo">
-          <label htmlFor="cantidad-input">Cantidad recibida (Entera ≥ 1, RN-08)</label>
+          <label htmlFor="cantidad-input">Cantidad recibida</label>
           <input
             id="cantidad-input"
             type="number"
@@ -200,7 +200,7 @@ export default function IngresarStock({
         </div>
 
         <div className="campo">
-          <label htmlFor="ubicacion-input">Ubicación física en el depósito (RN-08)</label>
+          <label htmlFor="ubicacion-input">Ubicación física en el depósito</label>
           <input
             id="ubicacion-input"
             type="text"
@@ -213,7 +213,7 @@ export default function IngresarStock({
         </div>
 
         <div className="campo">
-          <label htmlFor="delegar-input">Delegar y supervisar carga física (RN-08)</label>
+          <label htmlFor="delegar-input">Delegar y supervisar carga física </label>
           <select
             id="delegar-input"
             className="input-formulario"

@@ -116,7 +116,6 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado-con-accion">
           <div>
-            <span className="badge-seccion verde">Administrar · Supervisión</span>
             <p className="subpantalla-descripcion">
               Delegá órdenes técnicas, asigná especialistas y supervisá el cumplimiento de preventivos y correctivos.
             </p>
