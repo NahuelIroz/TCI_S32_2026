@@ -34,7 +34,6 @@ export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps)
       return;
     }
 
-    // 1. Registrar nueva máquina (RN-07)
     const nuevaMaquina: MaquinaPlanta = {
       id: Date.now(),
       codigo,
@@ -53,7 +52,6 @@ export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps)
 
     maquinasPlanta.unshift(nuevaMaquina);
 
-    // 2. Generar lista de repuestos requeridos a mantener en stock (RN-07)
     const listaBOM: RepuestoGenerado[] = [
       {
         codigo: `SKU-${codigo}-ROD`,
@@ -98,7 +96,6 @@ export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps)
       }
     });
 
-    // 3. Notificación por correo (RN-09)
     servicioNotificaciones.enviarNotificacion(
       "incidente",
       `🏭 ALTA RN-07: Nueva maquinaria ${nombre} (${codigo}) dada de alta`,

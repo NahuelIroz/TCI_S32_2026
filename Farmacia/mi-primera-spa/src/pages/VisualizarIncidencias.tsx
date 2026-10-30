@@ -38,13 +38,11 @@ export default function VisualizarIncidencias({
 
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado">
-          <span className="badge-seccion gris">Gerencia · Solo Lectura</span>
           <p className="subpantalla-descripcion">
             Visualización y auditoría en tiempo real de eventos no programados y cronograma de paradas preventivas.
           </p>
         </div>
 
-        {/* Selector de Pestaña Principal */}
         <div className="filtro-tabs">
           <button
             type="button"
@@ -68,7 +66,6 @@ export default function VisualizarIncidencias({
 
         {tabActiva === "incidencias" && (
           <>
-            {/* Subfiltros para incidencias */}
             <div className="filtro-tabs">
               <button
                 type="button"
