@@ -1,5 +1,5 @@
 
-import { apiGet } from "./api";
+import { apiGet, apiPost } from "./api";
 
 // Estados definidos en nuestro M1
 export type EstadoIncidenciaAPI =
@@ -25,4 +25,23 @@ export interface IncidenciaAPI {
 // GET /api/v1/incidencias
 export async function obtenerIncidencias(): Promise<IncidenciaAPI[]> {
   return apiGet<IncidenciaAPI[]>("/api/v1/incidencias");
+}
+
+
+
+export interface CrearIncidenciaDTO {
+  maquina_codigo: string;
+  usuario_id: number;
+  descripcion: string;
+  turno: "Mañana" | "Tarde" | "Noche";
+  prioridad: "BAJA" | "MEDIA" | "ALTA" | "CRITICA";
+}
+
+export async function crearIncidencia(
+  datos: CrearIncidenciaDTO
+): Promise<IncidenciaAPI> {
+  return apiPost<IncidenciaAPI, CrearIncidenciaDTO>(
+    "/api/v1/incidencias",
+    datos
+  );
 }
