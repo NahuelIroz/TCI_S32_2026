@@ -5,6 +5,11 @@ import type { ChangeEvent, FormEvent } from "react";
 import { crearIncidencia } from "../services/incidenciasService";
 import type { CrearIncidenciaDTO } from "../services/incidenciasService";
 
+import {
+  obtenerMaquinas,
+  type MaquinaAPI,
+} from "../services/maquinasService";
+
 import "./styles.css";
 
 interface ReporteIncidenciaProps {
@@ -16,22 +21,90 @@ type Prioridad = CrearIncidenciaDTO["prioridad"];
 
 function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
 
-  // Máquina existente en PostgreSQL
-  const [maquina, setMaquina] = useState("SEC-ENV-03");
+  // ============================
+  // ESTADOS - MÁQUINAS
+  // ============================
+
+  const [maquina, setMaquina] = useState("");
+  const [maquinas, setMaquinas] = useState<MaquinaAPI[]>([]);
+  const [cargandoMaquinas, setCargandoMaquinas] = useState(true);
+  const [errorMaquinas, setErrorMaquinas] = useState("");
+
+  // ============================
+  // ESTADOS - FORMULARIO
+  // ============================
 
   const [descripcion, setDescripcion] = useState("");
   const [turno, setTurno] = useState<Turno>("Mañana");
   const [prioridad, setPrioridad] = useState<Prioridad>("MEDIA");
 
   const [fotos, setFotos] = useState<File[]>([]);
+
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState("");
   const [mensajeExito, setMensajeExito] = useState("");
 
   const [previews, setPreviews] = useState<string[]>([]);
 
+
+  // ============================
+  // CARGAR MÁQUINAS DESDE FASTAPI
+  // ============================
+
   useEffect(() => {
-    const urls = fotos.map((foto) => URL.createObjectURL(foto));
+    let activo = true;
+
+    async function cargarMaquinas() {
+      try {
+        setCargandoMaquinas(true);
+        setErrorMaquinas("");
+
+        const datos = await obtenerMaquinas();
+
+        if (!activo) return;
+
+        setMaquinas(datos);
+
+        // Seleccionamos la primera máquina disponible
+        if (datos.length > 0) {
+          setMaquina(datos[0].codigo);
+        } else {
+          setMaquina("");
+        }
+
+      } catch (err) {
+        if (!activo) return;
+
+        setErrorMaquinas(
+          err instanceof Error
+            ? err.message
+            : "No se pudieron cargar las máquinas."
+        );
+
+      } finally {
+        if (activo) {
+          setCargandoMaquinas(false);
+        }
+      }
+    }
+
+    cargarMaquinas();
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+
+  // ============================
+  // PREVISUALIZACIÓN DE FOTOS
+  // ============================
+
+  useEffect(() => {
+    const urls = fotos.map((foto) =>
+      URL.createObjectURL(foto)
+    );
+
     setPreviews(urls);
 
     return () => {
@@ -40,7 +113,13 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
   }, [fotos]);
 
 
-  const agregarFotos = (event: ChangeEvent<HTMLInputElement>) => {
+  // ============================
+  // AGREGAR FOTOS
+  // ============================
+
+  const agregarFotos = (
+    event: ChangeEvent<HTMLInputElement>
+  ) => {
     if (event.target.files) {
       const nuevasFotos = Array.from(event.target.files);
 
@@ -54,17 +133,36 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
   };
 
 
+  // ============================
+  // ENVIAR INCIDENCIA A FASTAPI
+  // ============================
+
   const enviarIncidencia = async (event: FormEvent) => {
     event.preventDefault();
 
     if (enviando) return;
 
-    if (!descripcion.trim()) {
-      setError("Por favor detallá la falla observada.");
+    setError("");
+    setMensajeExito("");
+
+    // Validar máquina
+    if (
+      !maquina ||
+      !maquinas.some((item) => item.codigo === maquina)
+    ) {
+      setError("Seleccioná una máquina válida.");
       return;
     }
 
-    // Las fotos todavía no se pueden guardar en el backend
+    // Validar descripción
+    if (!descripcion.trim()) {
+      setError(
+        "Por favor detallá la falla observada."
+      );
+      return;
+    }
+
+    // Todavía no implementamos adjuntos
     if (fotos.length > 0) {
       setError(
         "La carga de fotografías todavía no está disponible. " +
@@ -74,13 +172,15 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
     }
 
     setEnviando(true);
-    setError("");
-    setMensajeExito("");
 
     try {
       const datos: CrearIncidenciaDTO = {
         maquina_codigo: maquina,
-        usuario_id: 1, // Usuario de prueba hasta implementar JWT
+
+        // Usuario de prueba.
+        // Se reemplazará al implementar JWT.
+        usuario_id: 1,
+
         descripcion: descripcion.trim(),
         turno,
         prioridad,
@@ -92,16 +192,16 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
         `Incidencia ${incidenciaCreada.codigo} registrada correctamente.`
       );
 
+      // Limpiar formulario
       setDescripcion("");
       setFotos([]);
       setPrioridad("MEDIA");
 
-      // Volver al listado después del registro
-      // El usuario verá la confirmación antes de volver
       alert(
-        `✓ Incidencia ${incidenciaCreada.codigo} registrada correctamente en PostgreSQL.`
+        `✓ Incidencia ${incidenciaCreada.codigo} registrada correctamente.`
       );
 
+      // Volver a la pantalla anterior
       onBack?.();
 
     } catch (err) {
@@ -117,15 +217,22 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
   };
 
 
+  // ============================
+  // INTERFAZ
+  // ============================
+
   return (
     <div className="incidencia-container">
 
+      {/* ENCABEZADO */}
       <header className="incidencia-header">
 
         <button
           type="button"
           className="boton-volver"
-          onClick={onBack ?? (() => window.history.back())}
+          onClick={
+            onBack ?? (() => window.history.back())
+          }
         >
           ←
         </button>
@@ -140,6 +247,10 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
         onSubmit={enviarIncidencia}
       >
 
+        {/* ============================
+            MÁQUINA / EQUIPO
+        ============================ */}
+
         <div className="campo">
 
           <label htmlFor="maquina">
@@ -149,20 +260,57 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
           <select
             id="maquina"
             value={maquina}
-            onChange={(e) => setMaquina(e.target.value)}
-            disabled={enviando}
+            onChange={(e) =>
+              setMaquina(e.target.value)
+            }
+            disabled={
+              enviando ||
+              cargandoMaquinas ||
+              maquinas.length === 0
+            }
+            required
           >
-            <option value="SEC-ENV-03">
-              Envasadora Rotativa #03 (SEC-ENV-03)
-            </option>
+
+            {maquinas.length === 0 && (
+              <option value="">
+                {cargandoMaquinas
+                  ? "Cargando máquinas..."
+                  : "No hay máquinas disponibles"}
+              </option>
+            )}
+
+            {maquinas.map((item) => (
+              <option
+                key={item.id}
+                value={item.codigo}
+              >
+                {item.nombre} ({item.codigo})
+              </option>
+            ))}
+
           </select>
+
+          {errorMaquinas && (
+            <small
+              role="alert"
+              style={{ color: "#dc3545" }}
+            >
+              {errorMaquinas}
+            </small>
+          )}
 
         </div>
 
 
+        {/* ============================
+            TURNO
+        ============================ */}
+
         <div className="campo">
 
-          <label htmlFor="turno">Turno</label>
+          <label htmlFor="turno">
+            Turno
+          </label>
 
           <select
             id="turno"
@@ -180,9 +328,15 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
         </div>
 
 
+        {/* ============================
+            PRIORIDAD
+        ============================ */}
+
         <div className="campo">
 
-          <label htmlFor="prioridad">Prioridad</label>
+          <label htmlFor="prioridad">
+            Prioridad
+          </label>
 
           <select
             id="prioridad"
@@ -200,6 +354,10 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
 
         </div>
 
+
+        {/* ============================
+            DESCRIPCIÓN
+        ============================ */}
 
         <div className="campo">
 
@@ -221,17 +379,25 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
         </div>
 
 
+        {/* ============================
+            FOTOGRAFÍAS
+        ============================ */}
+
         <div className="campo">
 
-          <label>Fotos (opcional)</label>
+          <label>
+            Fotos (opcional)
+          </label>
 
           <div className="fotos-container">
 
             {previews.map((url, index) => (
+
               <div
                 className="foto-preview"
                 key={url}
               >
+
                 <img
                   src={url}
                   alt={`Foto ${index + 1}`}
@@ -241,7 +407,9 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
                   type="button"
                   onClick={() =>
                     setFotos((anteriores) =>
-                      anteriores.filter((_, i) => i !== index)
+                      anteriores.filter(
+                        (_, i) => i !== index
+                      )
                     )
                   }
                   disabled={enviando}
@@ -251,10 +419,12 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
                 </button>
 
               </div>
+
             ))}
 
             <label className="agregar-foto">
               +
+
               <input
                 type="file"
                 accept="image/*"
@@ -263,6 +433,7 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
                 disabled={enviando}
                 hidden
               />
+
             </label>
 
           </div>
@@ -274,23 +445,41 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
         </div>
 
 
+        {/* ============================
+            MENSAJES
+        ============================ */}
+
         {error && (
-          <p role="alert" style={{ color: "#dc3545" }}>
+          <p
+            role="alert"
+            style={{ color: "#dc3545" }}
+          >
             {error}
           </p>
         )}
 
         {mensajeExito && (
-          <p role="status" style={{ color: "#198754" }}>
+          <p
+            role="status"
+            style={{ color: "#198754" }}
+          >
             {mensajeExito}
           </p>
         )}
 
 
+        {/* ============================
+            BOTÓN ENVIAR
+        ============================ */}
+
         <button
           type="submit"
           className="details-button"
-          disabled={enviando}
+          disabled={
+            enviando ||
+            cargandoMaquinas ||
+            maquinas.length === 0
+          }
         >
           {enviando
             ? "Registrando incidencia..."
@@ -304,3 +493,4 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
 }
 
 export default ReporteIncidencia;
+
