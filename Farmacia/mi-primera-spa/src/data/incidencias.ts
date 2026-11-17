@@ -1,8 +1,13 @@
 
+
 export type EstadoIncidencia =
-  | "Pendiente"
-  | "En Reparación"
-  | "Resuelto";
+  | "Reportada"
+  | "En triage"
+  | "En reparación"
+  | "Resuelta"
+  | "Cerrada"
+  | "Rechazada";
+
 
 export interface Incidencia {
   id: number;
