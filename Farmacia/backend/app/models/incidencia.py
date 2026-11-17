@@ -57,3 +57,23 @@ class Incidencia(SQLModel, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         sa_column=Column(DateTime(timezone=True), nullable=False)
     )
+
+
+class IncidenciaCreate(SQLModel):
+    maquina_codigo: str
+    usuario_id: int
+    descripcion: str
+    turno: Turno
+    prioridad: PrioridadIncidencia = PrioridadIncidencia.MEDIA
+
+
+class IncidenciaRead(SQLModel):
+    id: int
+    codigo: str
+    maquina_id: int
+    usuario_reportante_id: int
+    descripcion: str
+    turno: Turno
+    prioridad: PrioridadIncidencia
+    estado: EstadoIncidencia
+    fecha_reporte: datetime

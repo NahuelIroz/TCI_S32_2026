@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+from app.controllers import incidencia_controller
 
 # Base de datos
 from app.database import engine, create_db_and_tables
@@ -78,5 +79,6 @@ def health():
 #
 # from app.controllers import incidencia_controller
 # app.include_router(incidencia_controller.router)
+app.include_router(incidencia_controller.router)
 
 
