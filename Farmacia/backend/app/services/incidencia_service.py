@@ -17,6 +17,25 @@ from app.models.usuario import RolUsuario
 from app.repositories.incidencia_repository import IncidenciaRepository
 
 
+TRANSICIONES_PERMITIDAS = {
+    EstadoIncidencia.REPORTADA: {
+        EstadoIncidencia.EN_TRIAGE
+    },
+    EstadoIncidencia.EN_TRIAGE: {
+        EstadoIncidencia.EN_REPARACION,
+        EstadoIncidencia.RECHAZADA
+    },
+    EstadoIncidencia.EN_REPARACION: {
+        EstadoIncidencia.RESUELTA
+    },
+    EstadoIncidencia.RESUELTA: {
+        EstadoIncidencia.CERRADA
+    },
+    EstadoIncidencia.CERRADA: set(),
+    EstadoIncidencia.RECHAZADA: set(),
+}
+
+
 class IncidenciaService:
 
     def __init__(self, repository: IncidenciaRepository):
@@ -113,3 +132,33 @@ class IncidenciaService:
 
         # 7. Persistir incidencia
         return self.repository.crear(incidencia)
+
+        
+    def cambiar_estado(
+        self,
+        incidencia_id: int,
+        nuevo_estado: EstadoIncidencia,
+    ) -> Incidencia:
+
+        incidencia = self.repository.obtener_por_id(incidencia_id)
+
+        if incidencia is None:
+            raise ValueError("La incidencia no existe")
+
+        estado_actual = incidencia.estado
+
+        estados_permitidos = TRANSICIONES_PERMITIDAS.get(
+            estado_actual,
+            set()
+        )
+
+        if nuevo_estado not in estados_permitidos:
+            raise ValueError(
+                f"No se permite cambiar de "
+                f"{estado_actual.value} a {nuevo_estado.value}"
+            )
+
+        incidencia.estado = nuevo_estado
+
+        return self.repository.actualizar(incidencia)
+

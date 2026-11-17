@@ -118,3 +118,17 @@ class IncidenciaRepository:
         except Exception:
             self.session.rollback()
             raise
+
+
+    def actualizar(self, incidencia: Incidencia) -> Incidencia:
+        try:
+            self.session.add(incidencia)
+            self.session.commit()
+            self.session.refresh(incidencia)
+
+            return incidencia
+
+        except Exception:
+            self.session.rollback()
+            raise
+

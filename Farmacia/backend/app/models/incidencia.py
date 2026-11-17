@@ -77,3 +77,6 @@ class IncidenciaRead(SQLModel):
     prioridad: PrioridadIncidencia
     estado: EstadoIncidencia
     fecha_reporte: datetime
+
+class IncidenciaEstadoUpdate(SQLModel):
+    estado: EstadoIncidencia

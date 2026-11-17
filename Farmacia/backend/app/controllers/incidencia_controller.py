@@ -4,7 +4,13 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_incidencia_service
-from app.models.incidencia import IncidenciaCreate, IncidenciaRead ,EstadoIncidencia, Turno
+from app.models.incidencia import (
+    IncidenciaCreate,
+    IncidenciaRead,
+    IncidenciaEstadoUpdate,
+    EstadoIncidencia,
+    Turno,
+)
 from app.services.incidencia_service import IncidenciaService
 
 
@@ -82,3 +88,26 @@ def obtener_incidencia(
             status_code=404,
             detail=str(error),
         ) from error
+
+    
+@router.patch(
+    "/{incidencia_id}/estado",
+    response_model=IncidenciaRead,
+)
+def cambiar_estado_incidencia(
+    incidencia_id: int,
+    datos: IncidenciaEstadoUpdate,
+    service: IncidenciaService = Depends(get_incidencia_service),
+):
+    try:
+        return service.cambiar_estado(
+            incidencia_id=incidencia_id,
+            nuevo_estado=datos.estado,
+        )
+
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=str(error),
+        ) from error
+

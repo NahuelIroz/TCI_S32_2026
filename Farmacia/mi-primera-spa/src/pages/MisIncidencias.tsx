@@ -1,12 +1,21 @@
 
+import { useEffect, useState } from "react";
 
-import { useState } from "react";
 import IncidenciaCard from "../components/IncidenciaCard";
-import {
-  incidencias,
-  type EstadoIncidencia,
+
+import type {
+  Incidencia,
+  EstadoIncidencia,
 } from "../data/incidencias";
+
+import {
+  obtenerIncidencias,
+  type IncidenciaAPI,
+  type EstadoIncidenciaAPI,
+} from "../services/incidenciasService";
+
 import "./styles.css";
+
 
 interface MisIncidenciasProps {
   onNuevaIncidencia?: () => void;
@@ -15,21 +24,104 @@ interface MisIncidenciasProps {
 
 type Filtro = "Todas" | EstadoIncidencia;
 
+
+// Traducimos los estados del backend al frontend
+const estadosFrontend: Record<
+  EstadoIncidenciaAPI,
+  EstadoIncidencia
+> = {
+  REPORTADA: "Reportada",
+  EN_TRIAGE: "En triage",
+  EN_REPARACION: "En reparación",
+  RESUELTA: "Resuelta",
+  CERRADA: "Cerrada",
+  RECHAZADA: "Rechazada",
+};
+
+
+// Adaptamos la respuesta de FastAPI al formato de las tarjetas
+function adaptarIncidencia(
+  incidencia: IncidenciaAPI
+): Incidencia {
+  return {
+    id: incidencia.id,
+    codigo: incidencia.codigo,
+    maquina: `Máquina #${incidencia.maquina_id}`,
+    codigoMaquina: `ID ${incidencia.maquina_id}`,
+    descripcion: incidencia.descripcion,
+    fecha: new Date(
+      incidencia.fecha_reporte
+    ).toLocaleString("es-AR"),
+    estado: estadosFrontend[incidencia.estado],
+    turno: incidencia.turno,
+    tecnico: "Sin asignar",
+    adjuntos: 0,
+  };
+}
+
+
 function MisIncidencias({
   onNuevaIncidencia,
   onBack,
 }: MisIncidenciasProps) {
 
+  const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
+  const [cargando, setCargando] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [busqueda, setBusqueda] = useState("");
   const [filtro, setFiltro] = useState<Filtro>("Todas");
 
-  // Opciones de filtrado
+
+  // Cargar incidencias desde FastAPI
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarIncidencias() {
+      try {
+        setCargando(true);
+        setError(null);
+
+        const datos = await obtenerIncidencias();
+
+        if (activo) {
+          setIncidencias(datos.map(adaptarIncidencia));
+        }
+
+      } catch (err) {
+        if (activo) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "No se pudieron cargar las incidencias"
+          );
+        }
+
+      } finally {
+        if (activo) {
+          setCargando(false);
+        }
+      }
+    }
+
+    cargarIncidencias();
+
+    return () => {
+      activo = false;
+    };
+  }, []);
+
+
   const filtros: Filtro[] = [
     "Todas",
-    "Pendiente",
-    "En Reparación",
-    "Resuelto",
+    "Reportada",
+    "En triage",
+    "En reparación",
+    "Resuelta",
+    "Cerrada",
+    "Rechazada",
   ];
+
 
   const incidenciasFiltradas = incidencias.filter((inc) => {
 
@@ -46,6 +138,7 @@ function MisIncidencias({
 
     return coincideEstado && coincideBusqueda;
   });
+
 
   return (
     <div className="incidencia-container mis-incidencias">
@@ -65,6 +158,7 @@ function MisIncidencias({
 
       </header>
 
+
       <main className="incidencia-form mis-contenido">
 
         <div className="campo mis-buscador">
@@ -82,6 +176,8 @@ function MisIncidencias({
           />
 
         </div>
+
+
         <div
           className="mis-filtros"
           aria-label="Filtrar incidencias por estado"
@@ -115,20 +211,34 @@ function MisIncidencias({
 
         </div>
 
-        {/* INFORMACIÓN DE LA LÍNEA */}
+
+        {/* INFORMACIÓN DE SINCRONIZACIÓN */}
         <div className="mis-sincronizacion">
 
           <span>
-            🟢 LÍNEA ENVASADO 1-B
+            🟢 CONECTADO A FARMACIA API
           </span>
 
-          <small>Datos de prueba</small>
+          <small>Datos desde PostgreSQL</small>
 
         </div>
 
+
         <section className="mis-listado">
 
-          {incidenciasFiltradas.length > 0 ? (
+          {cargando ? (
+
+            <p className="mis-vacio">
+              Cargando incidencias...
+            </p>
+
+          ) : error ? (
+
+            <p className="mis-vacio" role="alert">
+              Error al cargar incidencias: {error}
+            </p>
+
+          ) : incidenciasFiltradas.length > 0 ? (
 
             incidenciasFiltradas.map((incidencia) => (
 
@@ -151,6 +261,8 @@ function MisIncidencias({
           )}
 
         </section>
+
+
         <button
           type="button"
           className="details-button"
@@ -166,3 +278,4 @@ function MisIncidencias({
 }
 
 export default MisIncidencias;
+
