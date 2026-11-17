@@ -1,40 +1,56 @@
-"""Entrypoint — V1 (por capa técnica)."""
+
+"""Entrypoint de la API de Farmacia."""
 
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlmodel import Session
 
-from app.controllers import health_controller, task_controller, project_controller
-from app.database import create_db_and_tables
+from app.database import engine
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    create_db_and_tables()
     yield
 
 
 app = FastAPI(
-    title="03.5 — Arquitectura modular (V1: por capa)",
-    version="0.1.0",
+    title="Farmacia API",
+    description="Sistema de gestión de mantenimiento e incidencias",
+    version="1.0.0",
     lifespan=lifespan,
 )
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-app.include_router(task_controller.router)
-app.include_router(project_controller.router)
-app.include_router(health_controller.router)
+
+@app.get("/api/health", tags=["Health"])
+def health():
+    with Session(engine) as session:
+        session.exec(text("SELECT 1")).first()
+
+    return {
+        "status": "Funciona",
+        "service": "Farmacia API",
+        "db": "conectada"
+    }
 
 
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run("app.main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run(
+        "app.main:app",
+        host="127.0.0.1",
+        port=8000,
+        reload=True
+    )
+

@@ -1,4 +1,5 @@
-"""Infraestructura: conexión a la base (engine + session + create_all)."""
+
+"""Infraestructura: conexión a PostgreSQL."""
 
 import os
 
@@ -7,12 +8,17 @@ from sqlmodel import SQLModel, Session, create_engine
 
 load_dotenv()
 
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://postgres:postgres@localhost:5432/postgres",
-)
+DATABASE_URL = os.getenv("DATABASE_URL")
 
-engine = create_engine(DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1))
+if not DATABASE_URL:
+    raise RuntimeError(
+        "No se encontró DATABASE_URL en el archivo .env"
+    )
+
+engine = create_engine(
+    DATABASE_URL,
+    echo=True
+)
 
 
 def create_db_and_tables() -> None:
@@ -22,3 +28,4 @@ def create_db_and_tables() -> None:
 def get_session():
     with Session(engine) as session:
         yield session
+
