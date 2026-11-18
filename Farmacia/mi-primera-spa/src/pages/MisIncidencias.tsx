@@ -25,6 +25,7 @@ import "./styles.css";
 interface MisIncidenciasProps {
   onNuevaIncidencia?: () => void;
   onBack?: () => void;
+  onVerDetalle?: (id: number) => void;
 }
 
 type Filtro = "Todas" | EstadoIncidencia;
@@ -97,6 +98,7 @@ function adaptarIncidencia(
 function MisIncidencias({
   onNuevaIncidencia,
   onBack,
+  onVerDetalle,
 }: MisIncidenciasProps) {
 
   // ============================
@@ -334,7 +336,7 @@ function MisIncidencias({
                 key={incidencia.id}
                 incidencia={incidencia}
                 onDetalle={(inc) => {
-                  alert(`Detalle de ${inc.codigo}`);
+                  onVerDetalle?.(inc.id);
                 }}
               />
 

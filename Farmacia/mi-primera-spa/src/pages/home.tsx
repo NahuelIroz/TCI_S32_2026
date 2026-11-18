@@ -20,6 +20,7 @@ import NotificacionesCompras from "./NotificacionesCompras";
 import TrazabilidadRepuesto from "./TrazabilidadRepuesto";
 import AltaMaquinaria from "./AltaMaquinaria";
 import BuzonNotificaciones from "./BuzonNotificaciones";
+import DetalleIncidencia from "./DetalleIncidencia";
 
 import type { Repuesto } from "../data/repuestos";
 import {
@@ -33,6 +34,7 @@ type Pantalla =
   | "home"
   | "incidencia"
   | "misIncidencias"
+  | "detalleIncidencia"
   | "stock"
   | "scan"
   | "ingresarStock"
@@ -308,6 +310,7 @@ export default function Home({
 }: HomeProps) {
   const [pantalla, setPantalla] = useState<Pantalla>("home");
   const [pantallaAnterior, setPantallaAnterior] = useState<Pantalla>("home");
+  const [incidenciaSeleccionadaId, setIncidenciaSeleccionadaId] = useState<number | null>(null);
   const [repuestoSeleccionadoCodigo, setRepuestoSeleccionadoCodigo] = useState<string>("SKU-6204-2R");
   const [repuestoParaCompra, setRepuestoParaCompra] = useState<Repuesto | undefined>(undefined);
 
@@ -316,6 +319,11 @@ export default function Home({
   const abrirReporte = () => {
     setPantallaAnterior(pantalla);
     setPantalla("incidencia");
+  };
+
+  const abrirDetalleIncidencia = (id: number) => {
+    setIncidenciaSeleccionadaId(id);
+    setPantalla("detalleIncidencia");
   };
 
   const ejecutarAccionPorId = (accionId: string) => {
@@ -515,14 +523,27 @@ export default function Home({
     );
   }
 
-  if (pantalla === "misIncidencias") {
-    return (
-      <MisIncidencias
-        onBack={() => setPantalla("home")}
-        onNuevaIncidencia={abrirReporte}
-      />
-    );
-  }
+  
+if (pantalla === "detalleIncidencia" && incidenciaSeleccionadaId !== null) {
+  return (
+    <DetalleIncidencia
+      incidenciaId={incidenciaSeleccionadaId}
+      rolUsuario={usuario.rol}
+      onBack={() => setPantalla("misIncidencias")}
+    />
+  );
+}
+
+if (pantalla === "misIncidencias") {
+  return (
+    <MisIncidencias
+      onBack={() => setPantalla("home")}
+      onNuevaIncidencia={abrirReporte}
+      onVerDetalle={abrirDetalleIncidencia}
+    />
+  );
+}
+
 
   const esMantenimiento = usuario.rol === "MANTENIMIENTO";
   const esOperario = usuario.rol === "OPERARIO";
