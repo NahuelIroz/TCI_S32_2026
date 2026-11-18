@@ -9,6 +9,9 @@ from sqlalchemy import text
 from app.controllers import incidencia_controller
 from app.controllers import maquina_controller
 from app.controllers.repuesto_controller import router as repuesto_router
+from app.controllers.movimiento_stock_controller import (
+    router as movimiento_stock_router
+)
 
 # Base de datos
 from app.database import engine, create_db_and_tables
@@ -84,5 +87,6 @@ def health():
 app.include_router(incidencia_controller.router)
 app.include_router(maquina_controller.router)
 app.include_router(repuesto_router)
+app.include_router(movimiento_stock_router)
 
 
