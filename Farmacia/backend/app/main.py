@@ -24,23 +24,22 @@ from app.controllers.pedido_compra_controller import (
 
 from app.database import engine, create_db_and_tables
 
+from app.controllers.auth_controller import router as auth_router, seed_usuarios_si_no_existen
+from sqlmodel import Session
+
 # Registrar modelos SQLModel
 import app.models
 
 
-# --------------------------------------------------
-# INICIALIZACIÓN DE LA BASE DE DATOS
-# --------------------------------------------------
+
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     create_db_and_tables()
+    with Session(engine) as session:
+        seed_usuarios_si_no_existen(session)
     yield
-
-
-# --------------------------------------------------
-# CONFIGURACIÓN DE FASTAPI
-# --------------------------------------------------
 
 app = FastAPI(
     title="Farmacia API",
@@ -91,3 +90,4 @@ app.include_router(maquina_controller.router)
 app.include_router(repuesto_router)
 app.include_router(movimiento_stock_router)
 app.include_router(pedido_compra_router)
+app.include_router(auth_router)
