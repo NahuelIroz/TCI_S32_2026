@@ -5,8 +5,11 @@ import os
 
 from dotenv import load_dotenv
 from sqlmodel import SQLModel, Session, create_engine
+
+# Modelos registrados para crear sus tablas
 from app.models.repuesto import Repuesto
 from app.models.movimiento_stock import MovimientoStock
+from app.models.pedido_compra import PedidoCompra
 
 load_dotenv()
 
