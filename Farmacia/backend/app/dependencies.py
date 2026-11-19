@@ -8,9 +8,11 @@ from app.database import get_session
 from app.models.usuario import RolUsuario, Usuario
 from app.repositories.incidencia_repository import IncidenciaRepository
 from app.repositories.maquina_repository import MaquinaRepository
+from app.repositories.tablero_repository import TableroRepository
 from app.services.auth_service import decodificar_token
 from app.services.incidencia_service import IncidenciaService
 from app.services.maquina_service import MaquinaService
+from app.services.tablero_service import TableroService
 
 
 def get_incidencia_repository(
@@ -35,6 +37,18 @@ def get_maquina_service(
     repository: MaquinaRepository = Depends(get_maquina_repository),
 ) -> MaquinaService:
     return MaquinaService(repository)
+
+
+def get_tablero_repository(
+    session: Session = Depends(get_session),
+) -> TableroRepository:
+    return TableroRepository(session)
+
+
+def get_tablero_service(
+    repository: TableroRepository = Depends(get_tablero_repository),
+) -> TableroService:
+    return TableroService(repository)
 
 
 

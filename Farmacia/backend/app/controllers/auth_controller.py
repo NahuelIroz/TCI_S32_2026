@@ -43,65 +43,53 @@ class LoginResponse(BaseModel):
 
 
 def seed_usuarios_si_no_existen(session: Session) -> None:
-    """Crea los 4 perfiles base si la tabla está vacía."""
-    hay_usuarios = session.exec(select(Usuario)).first()
-    if hay_usuarios:
-        return
-
     """Crea los usuarios base si no existen individualmente en la base de datos."""
     usuarios_base = [
-        Usuario(
-            username="operario",
-            nombre="Juan Operario",
-            rol=RolUsuario.OPERARIO,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
-        Usuario(
-            username="mantenimiento",
-            nombre="Carlos Mantenimiento",
-            rol=RolUsuario.MANTENIMIENTO,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
-        Usuario(
-            username="encargado",
-            nombre="Marta Encargada",
-            rol=RolUsuario.ENCARGADO,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
-        Usuario(
-            username="gerencia",
-            nombre="Roberto Gerente",
-            rol=RolUsuario.GERENCIA,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
-
-          Usuario(
-                    username="pepe",
-                    nombre="Roberto Gerente",
-                    rol=RolUsuario.GERENCIA,
-                    password_hash=hashear_password("1234"),
-                    activo=True,
-                ),
-        Usuario(
-            username="pepe",
-            nombre="Pepe Gerente",
-            rol=RolUsuario.GERENCIA,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
+        {
+            "username": "operario",
+            "nombre": "Juan Operario",
+            "rol": RolUsuario.OPERARIO,
+            "password": "1234",
+        },
+        {
+            "username": "mantenimiento",
+            "nombre": "Carlos Mantenimiento",
+            "rol": RolUsuario.MANTENIMIENTO,
+            "password": "1234",
+        },
+        {
+            "username": "encargado",
+            "nombre": "Marta Encargada",
+            "rol": RolUsuario.ENCARGADO,
+            "password": "1234",
+        },
+        {
+            "username": "gerencia",
+            "nombre": "Roberto Gerente",
+            "rol": RolUsuario.GERENCIA,
+            "password": "1234",
+        },
+        {
+            "username": "pepe",
+            "nombre": "Pepe Gerente",
+            "rol": RolUsuario.GERENCIA,
+            "password": "1234",
+        },
     ]
 
     for u in usuarios_base:
-        session.add(u)
         existente = session.exec(
-            select(Usuario).where(Usuario.username == u.username)
+            select(Usuario).where(Usuario.username == u["username"])
         ).first()
         if not existente:
-            session.add(u)
+            nuevo_usuario = Usuario(
+                username=u["username"],
+                nombre=u["nombre"],
+                rol=u["rol"],
+                password_hash=hashear_password(u["password"]),
+                activo=True,
+            )
+            session.add(nuevo_usuario)
 
     session.commit()
 

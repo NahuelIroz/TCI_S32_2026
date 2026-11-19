@@ -31,7 +31,7 @@ export const incidencias: Incidencia[] = [
     descripcion:
       "Fuga de lubricante en eje principal y ruido excesivo en rodamientos. Posible sobrecalentamiento.",
     fecha: "Hace 25 min",
-    estado: "Pendiente",
+    estado: "Reportada",
     turno: "Mañana",
     tecnico: "Sin asignar",
     adjuntos: 2,
@@ -44,7 +44,7 @@ export const incidencias: Incidencia[] = [
     descripcion:
       "Caída de presión en manómetro secundario. Requiere cambio de válvula solenoide y recalibración.",
     fecha: "Hoy 04:15",
-    estado: "En Reparación",
+    estado: "En reparación",
     turno: "Noche",
     tecnico: "J. Morales",
     adjuntos: 0,
@@ -57,7 +57,7 @@ export const incidencias: Incidencia[] = [
     descripcion:
       "Sustitución de filtro de aire y purga automática realizada. Parámetros estabilizados.",
     fecha: "Ayer 18:20",
-    estado: "Resuelto",
+    estado: "Resuelta",
     turno: "Tarde",
     tecnico: "M. López",
     adjuntos: 1,
