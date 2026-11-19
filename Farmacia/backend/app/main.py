@@ -6,13 +6,25 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
+
 from app.controllers import incidencia_controller
 from app.controllers import maquina_controller
 
-# Base de datos
+from app.controllers.repuesto_controller import (
+    router as repuesto_router
+)
+
+from app.controllers.movimiento_stock_controller import (
+    router as movimiento_stock_router
+)
+
+from app.controllers.pedido_compra_controller import (
+    router as pedido_compra_router
+)
+
 from app.database import engine, create_db_and_tables
 
-# Importamos los modelos para que SQLModel registre las tablas
+# Registrar modelos SQLModel
 import app.models
 
 
@@ -22,9 +34,7 @@ import app.models
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Crea las tablas que todavía no existen
     create_db_and_tables()
-
     yield
 
 
@@ -76,11 +86,8 @@ def health():
 # ROUTERS
 # --------------------------------------------------
 
-# Más adelante registraremos los controllers:
-#
-# from app.controllers import incidencia_controller
-# app.include_router(incidencia_controller.router)
 app.include_router(incidencia_controller.router)
 app.include_router(maquina_controller.router)
-
-
+app.include_router(repuesto_router)
+app.include_router(movimiento_stock_router)
+app.include_router(pedido_compra_router)

@@ -4,6 +4,7 @@ export type RolUsuario =
   | "ENCARGADO"
   | "GERENCIA";
 
+
 export type Permiso =
   | "incidencias.crear"
   | "maquinas.escanear"
@@ -13,6 +14,9 @@ export type Permiso =
   | "reparaciones.registrar_uso"
   | "compras.crear"
   | "compras.gestionar"
+  | "compras.cotizar"
+  | "compras.enviar_cotizacion"
+  | "compras.aprobar"
   | "reservas.liberar"
   | "tareas.supervisar"
   | "tableros.consultar"
@@ -33,10 +37,14 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     "maquinas.escanear",
     "reparaciones.registrar_uso",
     "compras.crear",
+    "compras.gestionar",
+    "compras.cotizar",
   ],
 
   ENCARGADO: [
     "compras.gestionar",
+    "compras.enviar_cotizacion",
+    "compras.aprobar",
     "stock.ingresar",
     "tareas.supervisar",
     "reservas.liberar",
@@ -49,10 +57,9 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     "incidencias.consultar",
     "maquinas.consultar",
     "estadisticas.consultar",
-    "compras.notificaciones",
-    "compras.gestionar",
   ],
 };
+
 
 export function tienePermiso(
   rol: RolUsuario,
@@ -221,6 +228,14 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
         descripcion: "Generar solicitudes de reposición de materiales",
         icono: "compras",
         color: "purple",
+      },
+      {
+        id: "gestionar-compras",
+        permiso: "compras.gestionar",
+        titulo: "Registrar cotizaciones",
+        descripcion: "Consultar solicitudes y cargar cotizaciones de proveedores",
+        icono: "cart-check",
+        color: "green",
       },
     ];
   }

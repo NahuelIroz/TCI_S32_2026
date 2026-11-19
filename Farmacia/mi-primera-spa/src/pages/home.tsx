@@ -20,6 +20,7 @@ import NotificacionesCompras from "./NotificacionesCompras";
 import TrazabilidadRepuesto from "./TrazabilidadRepuesto";
 import AltaMaquinaria from "./AltaMaquinaria";
 import BuzonNotificaciones from "./BuzonNotificaciones";
+import DetalleIncidencia from "./DetalleIncidencia";
 
 import type { Repuesto } from "../data/repuestos";
 import {
@@ -33,6 +34,7 @@ type Pantalla =
   | "home"
   | "incidencia"
   | "misIncidencias"
+  | "detalleIncidencia"
   | "stock"
   | "scan"
   | "ingresarStock"
@@ -308,6 +310,7 @@ export default function Home({
 }: HomeProps) {
   const [pantalla, setPantalla] = useState<Pantalla>("home");
   const [pantallaAnterior, setPantallaAnterior] = useState<Pantalla>("home");
+  const [incidenciaSeleccionadaId, setIncidenciaSeleccionadaId] = useState<number | null>(null);
   const [repuestoSeleccionadoCodigo, setRepuestoSeleccionadoCodigo] = useState<string>("SKU-6204-2R");
   const [repuestoParaCompra, setRepuestoParaCompra] = useState<Repuesto | undefined>(undefined);
 
@@ -316,6 +319,11 @@ export default function Home({
   const abrirReporte = () => {
     setPantallaAnterior(pantalla);
     setPantalla("incidencia");
+  };
+
+  const abrirDetalleIncidencia = (id: number) => {
+    setIncidenciaSeleccionadaId(id);
+    setPantalla("detalleIncidencia");
   };
 
   const ejecutarAccionPorId = (accionId: string) => {
@@ -403,7 +411,14 @@ export default function Home({
   }
 
   if (pantalla === "ingresarStock") {
-    return <IngresarStock onBack={() => setPantalla("home")} />;
+    return (
+      <IngresarStock
+        onBack={() => setPantalla("home")}
+        titulo="Ingresar repuestos al almacén"
+        subtitulo="Registrar ingresos y recepciones de pedidos aprobados"
+        modoRecepcionCompra={true}
+      />
+    );
   }
 
   if (pantalla === "cargarStockRecibido") {
@@ -411,13 +426,19 @@ export default function Home({
       <IngresarStock
         onBack={() => setPantalla("home")}
         titulo="Cargar el stock recibido y sus ubicaciones"
-        subtitulo="RN-08 · Carga de Compra y Ubicaciones"
+        subtitulo="RN-08 · Recepción de pedidos aprobados"
+        modoRecepcionCompra={true}
       />
     );
   }
 
   if (pantalla === "gestionarCompras") {
-    return <GestionCompras onBack={() => setPantalla("home")} />;
+    return (
+      <GestionCompras
+        onBack={() => setPantalla("home")}
+        rolUsuario={usuario.rol}
+      />
+    );
   }
 
   if (pantalla === "supervisarTareas") {
@@ -515,14 +536,27 @@ export default function Home({
     );
   }
 
-  if (pantalla === "misIncidencias") {
-    return (
-      <MisIncidencias
-        onBack={() => setPantalla("home")}
-        onNuevaIncidencia={abrirReporte}
-      />
-    );
-  }
+  
+if (pantalla === "detalleIncidencia" && incidenciaSeleccionadaId !== null) {
+  return (
+    <DetalleIncidencia
+      incidenciaId={incidenciaSeleccionadaId}
+      rolUsuario={usuario.rol}
+      onBack={() => setPantalla("misIncidencias")}
+    />
+  );
+}
+
+if (pantalla === "misIncidencias") {
+  return (
+    <MisIncidencias
+      onBack={() => setPantalla("home")}
+      onNuevaIncidencia={abrirReporte}
+      onVerDetalle={abrirDetalleIncidencia}
+    />
+  );
+}
+
 
   const esMantenimiento = usuario.rol === "MANTENIMIENTO";
   const esOperario = usuario.rol === "OPERARIO";
@@ -946,6 +980,14 @@ export default function Home({
             >
               <NavIcon name="compras" />
               <span>Compras</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("gestionarCompras")}
+            >
+              <NavIcon name="compras" />
+              <span>Cotizar</span>
             </button>
           </>
         )}

@@ -45,3 +45,46 @@ export async function crearIncidencia(
     datos
   );
 }
+
+
+export async function obtenerIncidenciaPorId(
+  id: number
+): Promise<IncidenciaAPI> {
+  return apiGet<IncidenciaAPI>(`/api/v1/incidencias/${id}`);
+}
+
+
+
+export async function cambiarEstadoIncidencia(
+  id: number,
+  nuevoEstado: EstadoIncidenciaAPI
+): Promise<IncidenciaAPI> {
+  const API_URL =
+    import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  const respuesta = await fetch(
+    `${API_URL}/api/v1/incidencias/${id}/estado`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        estado: nuevoEstado,
+      }),
+    }
+  );
+
+  if (!respuesta.ok) {
+    const error = await respuesta.json().catch(() => null);
+
+    throw new Error(
+      typeof error?.detail === "string"
+        ? error.detail
+        : `Error HTTP ${respuesta.status}`
+    );
+  }
+
+  return respuesta.json() as Promise<IncidenciaAPI>;
+}
+
