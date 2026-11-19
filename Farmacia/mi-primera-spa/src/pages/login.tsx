@@ -2,6 +2,7 @@ import "./styles.css";
 import Home from "./home";
 import { useState } from "react";
 import { PERFILES, type PerfilUsuario } from "../auth/permisos";
+import { apiPost } from "../services/api";
 
 export function Login() {
   const [usuario, setUsuario] = useState("");
@@ -9,59 +10,50 @@ export function Login() {
   const [errorMensaje, setErrorMensaje] = useState("");
   const [perfilActivo, setPerfilActivo] = useState<PerfilUsuario | null>(null);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     const u = usuario.trim().toLowerCase();
     const p = password.trim();
 
-    if (!u && !p) {
+    if (!u || !p) {
       setErrorMensaje("Por favor, ingresá usuario y contraseña.");
       return;
     }
 
-    if (!u) {
-      setErrorMensaje("Por favor, ingresá tu usuario.");
-      return;
-    }
-
-    if (!p) {
-      setErrorMensaje("Por favor, ingresá tu contraseña.");
-      return;
-    }
-
-    if (p !== "1234") {
-      setErrorMensaje("Contraseña incorrecta. (Prueba con '1234')");
-      return;
-    }
-
-    if (u === "operario") {
+    try {
       setErrorMensaje("");
-      setPerfilActivo(PERFILES.operario);
-      return;
-    }
 
-    if (u === "mantenimiento") {
-      setErrorMensaje("");
-      setPerfilActivo(PERFILES.mantenimiento);
-      return;
-    }
+      // Petición real al backend FastAPI
+      const respuesta = await apiPost<{
+        access_token: string;
+        token_type: string;
+        usuario: {
+          id: number;
+          username: string;
+          nombre: string;
+          rol: "OPERARIO" | "MANTENIMIENTO" | "ENCARGADO" | "GERENCIA";
+        };
+      }, { username: string; password: string }>(
+        "/api/v1/auth/login",
+        { username: u, password: p }
+      );
 
-    if (u === "encargado" || u === "admin") {
-      setErrorMensaje("");
-      setPerfilActivo(PERFILES.encargado);
-      return;
-    }
+      // 1. Guardar el token JWT en localStorage
+      localStorage.setItem("token", respuesta.access_token);
 
-    if (u === "gerencia") {
-      setErrorMensaje("");
-      setPerfilActivo(PERFILES.gerencia);
-      return;
+      // 2. Cargar el perfil correspondiente según el rol del backend
+      const rolKey = respuesta.usuario.rol.toLowerCase() as keyof typeof PERFILES;
+      if (PERFILES[rolKey]) {
+        setPerfilActivo(PERFILES[rolKey]);
+      } else {
+        setPerfilActivo(PERFILES.operario);
+      }
+    } catch (err) {
+      setErrorMensaje(
+        err instanceof Error ? err.message : "Usuario o contraseña inválidos."
+      );
     }
-
-    setErrorMensaje(
-      "Usuario no válido. Usuarios habilitados: 'operario', 'mantenimiento', 'encargado' o 'gerencia'."
-    );
   };
 
   if (perfilActivo) {
@@ -69,6 +61,7 @@ export function Login() {
       <Home
         usuario={perfilActivo}
         onCerrarSesion={() => {
+          localStorage.removeItem("token");
           setPerfilActivo(null);
           setUsuario("");
           setPassword("");
