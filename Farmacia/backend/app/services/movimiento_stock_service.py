@@ -8,6 +8,8 @@ from app.models.movimiento_stock import (
     IngresoStockCreate,
     IngresoStockRead,
     MovimientoStockRead,
+    ConsumoStockCreate,
+    ConsumoStockRead,
 )
 
 from app.repositories.movimiento_stock_repository import (
@@ -102,6 +104,93 @@ class MovimientoStockService:
         except Exception:
             session.rollback()
             raise
+
+    
+    def registrar_consumo(
+        self,
+        session: Session,
+        repuesto_id: int,
+        datos: ConsumoStockCreate
+    ) -> ConsumoStockRead:
+
+        if not all([
+            datos.maquina.strip(),
+            datos.orden_trabajo.strip(),
+            datos.motivo.strip(),
+            datos.tecnico.strip()
+        ]):
+            raise HTTPException(
+                status_code=422,
+                detail="Los campos obligatorios no pueden estar vacíos"
+            )
+
+        try:
+            # 1. Obtener repuesto bloqueando su fila
+            repuesto = (
+                self.repository.obtener_repuesto_para_actualizar(
+                    session,
+                    repuesto_id
+                )
+            )
+
+            if repuesto is None:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Repuesto no encontrado"
+                )
+
+            # 2. Verificar stock físico
+            if datos.cantidad > repuesto.disponible:
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "Stock insuficiente. "
+                        f"Disponible: {repuesto.disponible}. "
+                        f"Solicitado: {datos.cantidad}."
+                    )
+                )
+
+            stock_anterior = repuesto.disponible
+
+            # 3. Descontar cantidad
+            repuesto.disponible -= datos.cantidad
+
+            session.add(repuesto)
+
+            # 4. Registrar movimiento
+            movimiento = MovimientoStock(
+                repuesto_id=repuesto_id,
+                tipo=TipoMovimientoStock.CONSUMO,
+                cantidad=datos.cantidad,
+                motivo=datos.motivo.strip(),
+                maquina=datos.maquina.strip(),
+                orden_trabajo=datos.orden_trabajo.strip(),
+                tecnico=datos.tecnico.strip()
+            )
+
+            self.repository.crear_movimiento(
+                session,
+                movimiento
+            )
+
+            # 5. Confirmar ambas operaciones
+            session.commit()
+
+            session.refresh(movimiento)
+            session.refresh(repuesto)
+
+            return ConsumoStockRead(
+                movimiento=MovimientoStockRead.model_validate(
+                    movimiento
+                ),
+                stock_anterior=stock_anterior,
+                stock_actual=repuesto.disponible
+            )
+
+        except Exception:
+            session.rollback()
+            raise
+
 
     def listar_movimientos(
         self,

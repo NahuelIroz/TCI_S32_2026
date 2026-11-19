@@ -8,6 +8,8 @@ from app.models.movimiento_stock import (
     IngresoStockCreate,
     IngresoStockRead,
     MovimientoStockRead,
+    ConsumoStockCreate,
+    ConsumoStockRead,
 )
 
 from app.services.movimiento_stock_service import (
@@ -52,3 +54,21 @@ def listar_movimientos(
         session,
         repuesto_id
     )
+
+
+@router.post(
+    "/{repuesto_id}/consumos",
+    response_model=ConsumoStockRead,
+    status_code=status.HTTP_201_CREATED
+)
+def registrar_consumo(
+    repuesto_id: int,
+    datos: ConsumoStockCreate,
+    session: Session = Depends(get_session)
+):
+    return service.registrar_consumo(
+        session,
+        repuesto_id,
+        datos
+    )
+

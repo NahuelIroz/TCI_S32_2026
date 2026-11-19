@@ -84,3 +84,18 @@ export async function registrarIngresoStock(
     datos
   );
 }
+
+
+
+// ==========================================
+// OBTENER MOVIMIENTOS DE UN REPUESTO
+// ==========================================
+
+export async function obtenerMovimientosRepuesto(
+  repuestoId: number
+): Promise<MovimientoStockAPI[]> {
+
+  return apiGet<MovimientoStockAPI[]>(
+    `/api/v1/repuestos/${repuestoId}/movimientos`
+  );
+}

@@ -45,6 +45,23 @@ class MovimientoStock(SQLModel, table=True):
     observaciones: str | None = Field(default=None)
 
 
+    maquina: str | None = Field(
+        default=None,
+        max_length=200
+    )
+
+    orden_trabajo: str | None = Field(
+        default=None,
+        max_length=100
+    )
+
+    tecnico: str | None = Field(
+        default=None,
+        max_length=200
+    )
+
+
+
 class IngresoStockCreate(SQLModel):
     cantidad: int = Field(gt=0)
 
@@ -81,3 +98,30 @@ class IngresoStockRead(SQLModel):
     movimiento: MovimientoStockRead
     stock_anterior: int
     stock_actual: int
+    maquina: str | None = None
+    orden_trabajo: str | None = None
+    tecnico: str | None = None
+
+
+
+
+class ConsumoStockCreate(SQLModel):
+    cantidad: int = Field(gt=0)
+
+    maquina: str = Field(min_length=1, max_length=200)
+
+    orden_trabajo: str = Field(
+        min_length=1,
+        max_length=100
+    )
+
+    motivo: str = Field(min_length=1, max_length=300)
+
+    tecnico: str = Field(min_length=1, max_length=200)
+
+
+class ConsumoStockRead(SQLModel):
+    movimiento: MovimientoStockRead
+    stock_anterior: int
+    stock_actual: int
+
