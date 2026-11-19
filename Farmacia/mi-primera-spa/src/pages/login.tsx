@@ -44,11 +44,6 @@ export function Login() {
 
       // 2. Cargar el perfil correspondiente según el rol del backend
       const rolKey = respuesta.usuario.rol.toLowerCase() as keyof typeof PERFILES;
-      if (PERFILES[rolKey]) {
-        setPerfilActivo(PERFILES[rolKey]);
-      } else {
-        setPerfilActivo(PERFILES.operario);
-      }
       const basePerfil = PERFILES[rolKey] ?? PERFILES.operario;
       setPerfilActivo({
         ...basePerfil,
