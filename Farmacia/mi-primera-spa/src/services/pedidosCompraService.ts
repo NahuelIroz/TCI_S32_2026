@@ -56,3 +56,33 @@ export async function crearPedidoCompra(
     datos
   );
 }
+
+// Actualizar estado de un pedido
+export async function actualizarEstadoPedido(
+  pedidoId: number,
+  estado: EstadoPedido
+): Promise<PedidoCompraAPI> {
+  const baseUrl =
+    import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  const response = await fetch(
+    `${baseUrl}/api/v1/pedidos-compra/${pedidoId}/estado`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ estado }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+
+    throw new Error(
+      error?.detail ?? "No se pudo actualizar el pedido"
+    );
+  }
+
+  return response.json() as Promise<PedidoCompraAPI>;
+}
