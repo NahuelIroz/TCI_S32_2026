@@ -28,6 +28,8 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg://farmacia:farmacia_dev@db:5432/farmacia_db
+    volumes:
+      - ./backend/app:/app/app
     depends_on:
       db:
         condition: service_healthy
@@ -40,6 +42,8 @@ services:
     restart: unless-stopped
     ports:
       - "5173:5173"
+    volumes:
+      - ./mi-primera-spa/src:/app/src
     depends_on:
       - backend
 
