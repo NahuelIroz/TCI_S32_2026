@@ -3,6 +3,9 @@ import { useEffect, useState } from "react";
 
 import {
   obtenerIncidenciaPorId,
+  obtenerFotosIncidencia,
+  urlFotoIncidencia,
+  type FotoIncidenciaAPI,
   cambiarEstadoIncidencia,
   type IncidenciaAPI,
   type EstadoIncidenciaAPI,
@@ -54,6 +57,9 @@ function DetalleIncidencia({
   onBack,
 }: DetalleIncidenciaProps) {
 
+  const [fotos, setFotos] = useState<FotoIncidenciaAPI[]>([]);
+  const [errorFotos, setErrorFotos] = useState("");
+
   // Datos de la incidencia
   const [incidencia, setIncidencia] =
     useState<IncidenciaAPI | null>(null);
@@ -101,6 +107,8 @@ function DetalleIncidencia({
 
         setIncidencia(null);
         setMaquina(null);
+        setFotos([]);
+        setErrorFotos("");
 
         setNuevoEstado("");
         setErrorEstado("");
@@ -120,6 +128,12 @@ function DetalleIncidencia({
 
         setIncidencia(datosIncidencia);
         setMaquina(datosMaquina);
+        try {
+          const fotosGuardadas = await obtenerFotosIncidencia(incidenciaId);
+          if (activo) setFotos(fotosGuardadas);
+        } catch (err) {
+          if (activo) setErrorFotos(err instanceof Error ? err.message : "No se pudieron cargar las fotografías.");
+        }
 
       } catch (err) {
         if (!activo) return;
@@ -322,6 +336,19 @@ function DetalleIncidencia({
 
               <p>{incidencia.descripcion}</p>
 
+            </div>
+
+            <div className="campo">
+              <strong>Fotografías de la incidencia</strong>
+              {errorFotos && <p role="alert" style={{ color: "#dc3545" }}>{errorFotos}</p>}
+              {!errorFotos && fotos.length === 0 && <p>Sin fotografías adjuntas.</p>}
+              <div className="fotos-container">
+                {fotos.map((foto) => (
+                  <a key={foto.id} href={urlFotoIncidencia(foto.url)} target="_blank" rel="noreferrer" aria-label={`Ampliar fotografía ${foto.id}`}>
+                    <img src={urlFotoIncidencia(foto.url)} alt={`Fotografía de la incidencia ${incidencia.codigo}`} style={{ width: 130, height: 130, objectFit: "cover", borderRadius: 8 }} />
+                  </a>
+                ))}
+              </div>
             </div>
 
             {/* ======================================

@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import type { ChangeEvent, FormEvent } from "react";
 
-import { crearIncidencia } from "../services/incidenciasService";
+import { crearIncidencia, subirFotosIncidencia } from "../services/incidenciasService";
 import type { CrearIncidenciaDTO } from "../services/incidenciasService";
 
 import {
@@ -162,14 +162,8 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
       return;
     }
 
-    // Todavía no implementamos adjuntos
-    if (fotos.length > 0) {
-      setError(
-        "La carga de fotografías todavía no está disponible. " +
-        "Quitá las fotos para registrar la incidencia."
-      );
-      return;
-    }
+    if (fotos.length > 5) { setError("Se permiten como máximo 5 fotos."); return; }
+    if (fotos.some(f => f.size > 5 * 1024 * 1024)) { setError("Cada foto debe pesar 5 MB o menos."); return; }
 
     setEnviando(true);
 
@@ -188,9 +182,16 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
 
       const incidenciaCreada = await crearIncidencia(datos);
 
-      setMensajeExito(
-        `Incidencia ${incidenciaCreada.codigo} registrada correctamente.`
-      );
+      if (fotos.length > 0) {
+        try {
+          await subirFotosIncidencia(incidenciaCreada.id, fotos);
+        } catch (errorFoto) {
+          setError(`La incidencia ${incidenciaCreada.codigo} se registró, pero las fotos no se pudieron subir: ${errorFoto instanceof Error ? errorFoto.message : "Error desconocido"}. Abrí el detalle para verificar los adjuntos.`);
+          return;
+        }
+      }
+
+      setMensajeExito(`Incidencia ${incidenciaCreada.codigo} registrada correctamente.`);
 
       // Limpiar formulario
       setDescripcion("");
@@ -439,7 +440,7 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
           </div>
 
           <small>
-            La carga de fotografías se habilitará próximamente.
+            Hasta 5 fotos JPG, PNG o WebP, de 5 MB como máximo cada una.
           </small>
 
         </div>
@@ -493,4 +494,3 @@ function ReporteIncidencia({ onBack }: ReporteIncidenciaProps) {
 }
 
 export default ReporteIncidencia;
-
