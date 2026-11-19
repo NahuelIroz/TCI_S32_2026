@@ -28,6 +28,22 @@ def listar_repuestos(
 
 
 @router.get(
+    "/codigo/{codigo}",
+    response_model=RepuestoRead,
+    summary="Obtener repuesto por código QR o SKU"
+)
+def obtener_repuesto_por_codigo(
+    codigo: str,
+    session: Session = Depends(get_session)
+):
+    """Busca y retorna los datos y disponibilidad de un repuesto según el código leído por el escáner QR."""
+    return service.obtener_por_codigo(
+        session,
+        codigo
+    )
+
+
+@router.get(
     "/{repuesto_id}",
     response_model=RepuestoRead
 )

@@ -48,6 +48,7 @@ def seed_usuarios_si_no_existen(session: Session) -> None:
     if hay_usuarios:
         return
 
+    """Crea los usuarios base si no existen individualmente en la base de datos."""
     usuarios_base = [
         Usuario(
             username="operario",
@@ -77,10 +78,31 @@ def seed_usuarios_si_no_existen(session: Session) -> None:
             password_hash=hashear_password("1234"),
             activo=True,
         ),
+
+          Usuario(
+                    username="pepe",
+                    nombre="Roberto Gerente",
+                    rol=RolUsuario.GERENCIA,
+                    password_hash=hashear_password("1234"),
+                    activo=True,
+                ),
+        Usuario(
+            username="pepe",
+            nombre="Pepe Gerente",
+            rol=RolUsuario.GERENCIA,
+            password_hash=hashear_password("1234"),
+            activo=True,
+        ),
     ]
 
     for u in usuarios_base:
         session.add(u)
+        existente = session.exec(
+            select(Usuario).where(Usuario.username == u.username)
+        ).first()
+        if not existente:
+            session.add(u)
+
     session.commit()
 
 

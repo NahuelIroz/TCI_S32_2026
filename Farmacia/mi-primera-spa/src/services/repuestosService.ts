@@ -28,9 +28,19 @@ export async function buscarRepuestos(
   );
 }
 
-// ==========================================
-// INTERFACES PARA INGRESO DE STOCK
-// ==========================================
+
+
+export async function obtenerRepuestoPorCodigo(
+  codigo: string
+): Promise<Repuesto> {
+  const parametro = encodeURIComponent(codigo.trim());
+
+  return apiGet<Repuesto>(
+    `/api/v1/repuestos/codigo/${parametro}`
+  );
+}
+
+
 
 // Datos enviados desde React hacia FastAPI
 export interface IngresoStockCreate {
@@ -68,9 +78,7 @@ export interface IngresoStockResponse {
   stock_actual: number;
 }
 
-// ==========================================
-// REGISTRAR INGRESO DE STOCK
-// ==========================================
+
 
 export async function registrarIngresoStock(
   repuestoId: number,
@@ -85,9 +93,7 @@ export async function registrarIngresoStock(
 
 
 
-// ==========================================
-// OBTENER MOVIMIENTOS DE UN REPUESTO
-// ==========================================
+
 
 export async function obtenerMovimientosRepuesto(
   repuestoId: number

@@ -49,6 +49,12 @@ export function Login() {
       } else {
         setPerfilActivo(PERFILES.operario);
       }
+      const basePerfil = PERFILES[rolKey] ?? PERFILES.operario;
+      setPerfilActivo({
+        ...basePerfil,
+        usuario: respuesta.usuario.username,
+        nombre: respuesta.usuario.nombre,
+      });
     } catch (err) {
       setErrorMensaje(
         err instanceof Error ? err.message : "Usuario o contraseña inválidos."

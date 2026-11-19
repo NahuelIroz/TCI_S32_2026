@@ -1,17 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { Html5Qrcode } from "html5-qrcode";
-import { repuestos, type Repuesto } from "../data/repuestos";
+import type { Repuesto } from "../data/repuestos";
+import { obtenerRepuestoPorCodigo } from "../services/repuestosService";
 import "./styles.css";
 
 interface EscanearQRProps {
   onBack?: () => void;
 }
 
+const CODIGOS_EJEMPLO = [
+  "SKU-6204-2R",
+  "SKU-VLV-420",
+  "SKU-FLT-880",
+  "SKU-INEXISTENTE",
+];
+
 export default function EscanearQR({ onBack }: EscanearQRProps) {
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const [escaneando, setEscaneando] = useState(false);
   const [resultado, setResultado] = useState("");
   const [error, setError] = useState("");
+  const [repuestoEncontrado, setRepuestoEncontrado] =
+    useState<Repuesto | null>(null);
+  const [cargandoRepuesto, setCargandoRepuesto] = useState(false);
 
   useEffect(() => {
     if (!escaneando) return;
@@ -100,16 +111,40 @@ export default function EscanearQR({ onBack }: EscanearQRProps) {
   function limpiarResultado() {
     setResultado("");
     setError("");
+    setRepuestoEncontrado(null);
   }
 
-  // Buscar si el código leído coincide con algún repuesto existente en el catálogo
-  const repuestoEncontrado: Repuesto | undefined = resultado
-    ? repuestos.find(
-        (r) =>
-          r.codigo.toLowerCase() === resultado.trim().toLowerCase() ||
-          resultado.toLowerCase().includes(r.codigo.toLowerCase())
-      )
-    : undefined;
+  // Consultar a la API de FastAPI cuando se detecta un código QR
+  useEffect(() => {
+    if (!resultado) {
+      setRepuestoEncontrado(null);
+      return;
+    }
+
+    let activo = true;
+
+    async function buscarEnBackend() {
+      try {
+        setCargandoRepuesto(true);
+        const repuesto = await obtenerRepuestoPorCodigo(resultado);
+        if (!activo) return;
+        setRepuestoEncontrado(repuesto);
+      } catch {
+        if (!activo) return;
+        setRepuestoEncontrado(null);
+      } finally {
+        if (activo) {
+          setCargandoRepuesto(false);
+        }
+      }
+    }
+
+    void buscarEnBackend();
+
+    return () => {
+      activo = false;
+    };
+  }, [resultado]);
 
   return (
     <div className="pagina-qr-wrapper">
@@ -198,17 +233,17 @@ export default function EscanearQR({ onBack }: EscanearQRProps) {
                 ¿Sin cámara web disponible? Probá un código de ejemplo:
               </span>
               <div className="qr-simulador-chips">
-                {repuestos.slice(0, 3).map((rep) => (
+                {CODIGOS_EJEMPLO.map((cod) => (
                   <button
-                    key={rep.id}
+                    key={cod}
                     type="button"
                     className="qr-chip"
                     onClick={() => {
                       setError("");
-                      setResultado(rep.codigo);
+                      setResultado(cod);
                     }}
                   >
-                    {rep.codigo}
+                    {cod}
                   </button>
                 ))}
               </div>
@@ -223,7 +258,12 @@ export default function EscanearQR({ onBack }: EscanearQRProps) {
                 <h3>¡Código detectado con éxito!</h3>
               </div>
 
-              {repuestoEncontrado ? (
+              {cargandoRepuesto ? (
+                <div className="qr-raw-card" style={{ textAlign: "center", padding: "1.5rem" }}>
+                  <p className="qr-raw-titulo">Consultando base de datos en tiempo real...</p>
+                  <code className="qr-codigo-texto">{resultado}</code>
+                </div>
+              ) : repuestoEncontrado ? (
                 <div className="qr-repuesto-card">
                   <div className="qr-repuesto-top">
                     <span
@@ -257,6 +297,12 @@ export default function EscanearQR({ onBack }: EscanearQRProps) {
                         {repuestoEncontrado.unidad}
                       </strong>
                     </div>
+                    <div className="qr-repuesto-item" style={{ gridColumn: "span 2" }}>
+                      <span className="qr-item-label">Ubicación en almacén</span>
+                      <strong className="qr-item-valor">
+                        {repuestoEncontrado.ubicacion}
+                      </strong>
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -264,7 +310,7 @@ export default function EscanearQR({ onBack }: EscanearQRProps) {
                   <p className="qr-raw-titulo">Contenido del QR:</p>
                   <code className="qr-codigo-texto">{resultado}</code>
                   <p className="qr-raw-nota">
-                    No se encontró un repuesto en el catálogo con este código.
+                    No se encontró un repuesto en la base de datos con este código.
                   </p>
                 </div>
               )}
