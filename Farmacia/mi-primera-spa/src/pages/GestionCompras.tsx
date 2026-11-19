@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   obtenerPedidosCompra,
   actualizarEstadoPedido,
+  actualizarCotizacionPedido,
   type PedidoCompraAPI,
   type EstadoPedido,
 } from "../services/pedidosCompraService";
@@ -21,6 +22,14 @@ type FiltroEstado =
   | "aprobado"
   | "rechazado"
   | "recibido";
+
+function tieneCotizacion(pedido: PedidoCompraAPI): boolean {
+  return (
+    pedido.proveedor.trim().length > 0 &&
+    Number.isFinite(pedido.monto_estimado) &&
+    pedido.monto_estimado > 0
+  );
+}
 
 function formatearFecha(fecha: string): string {
   const valor = new Date(fecha);
@@ -45,9 +54,17 @@ export default function GestionCompras({
 
   const [mensajeFeedback, setMensajeFeedback] = useState("");
   const [error, setError] = useState("");
+
   const [cargando, setCargando] = useState(true);
   const [actualizandoId, setActualizandoId] =
     useState<number | null>(null);
+
+  // Formulario de cotización
+  const [pedidoEditandoId, setPedidoEditandoId] =
+    useState<number | null>(null);
+
+  const [proveedor, setProveedor] = useState("");
+  const [montoEstimado, setMontoEstimado] = useState("");
 
   async function cargarPedidos() {
     const datos = await obtenerPedidosCompra();
@@ -86,11 +103,101 @@ export default function GestionCompras({
     };
   }, []);
 
+  function abrirFormularioCotizacion(pedido: PedidoCompraAPI) {
+    setPedidoEditandoId(pedido.id);
+    setProveedor(pedido.proveedor || "");
+    setMontoEstimado(
+      pedido.monto_estimado > 0
+        ? String(pedido.monto_estimado)
+        : ""
+    );
+    setError("");
+    setMensajeFeedback("");
+  }
+
+  function cerrarFormularioCotizacion() {
+    setPedidoEditandoId(null);
+    setProveedor("");
+    setMontoEstimado("");
+  }
+
+  async function guardarCotizacion(pedido: PedidoCompraAPI) {
+    if (actualizandoId !== null) return;
+
+    const proveedorLimpio = proveedor.trim();
+    const monto = Number(montoEstimado);
+
+    if (!proveedorLimpio) {
+      setError("Ingresá el nombre del proveedor.");
+      return;
+    }
+
+    if (!Number.isFinite(monto) || monto <= 0) {
+      setError("El monto estimado debe ser mayor a cero.");
+      return;
+    }
+
+    setError("");
+    setMensajeFeedback("");
+    setActualizandoId(pedido.id);
+
+    try {
+      const actualizado = await actualizarCotizacionPedido(
+        pedido.id,
+        {
+          proveedor: proveedorLimpio,
+          monto_estimado: monto,
+        }
+      );
+
+      setPedidos((anteriores) =>
+        anteriores.map((p) =>
+          p.id === actualizado.id ? actualizado : p
+        )
+      );
+
+      cerrarFormularioCotizacion();
+
+      setMensajeFeedback(
+        `Cotización del pedido ${actualizado.codigo_pedido} ` +
+        `guardada correctamente. Ya puede aprobarse.`
+      );
+
+      try {
+        await cargarPedidos();
+      } catch (err) {
+        console.warn(
+          "La cotización se guardó, pero no se pudo refrescar el listado:",
+          err
+        );
+      }
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo guardar la cotización."
+      );
+    } finally {
+      setActualizandoId(null);
+    }
+  }
+
   async function handleCambiarEstado(
     pedido: PedidoCompraAPI,
     nuevoEstado: EstadoPedido
   ) {
     if (actualizandoId !== null) return;
+
+    if (
+      nuevoEstado === "Aprobado" &&
+      !tieneCotizacion(pedido)
+    ) {
+      setError(
+        `El pedido ${pedido.codigo_pedido} necesita ` +
+        `una cotización antes de ser aprobado.`
+      );
+      return;
+    }
 
     const requiereConfirmacion =
       nuevoEstado === "Aprobado" ||
@@ -121,6 +228,10 @@ export default function GestionCompras({
         )
       );
 
+      if (pedidoEditandoId === pedido.id) {
+        cerrarFormularioCotizacion();
+      }
+
       setMensajeFeedback(
         `Pedido ${actualizado.codigo_pedido} actualizado ` +
         `a estado "${actualizado.estado}".`
@@ -141,12 +252,10 @@ export default function GestionCompras({
           : "No se pudo actualizar el pedido."
       );
 
-      // Si otro usuario cambió el estado, recuperamos
-      // la versión actual de PostgreSQL.
       try {
         await cargarPedidos();
       } catch {
-        // Conservamos el mensaje del error original.
+        // Conservamos el error original.
       }
     } finally {
       setActualizandoId(null);
@@ -255,7 +364,7 @@ export default function GestionCompras({
       <div className="gestion-compras-body">
         <div className="subpantalla-encabezado">
           <p className="subpantalla-descripcion">
-            Revisión, aprobación y cotización de requerimientos
+            Revisión, cotización y aprobación de requerimientos
             de compra y reposición para planta.
           </p>
         </div>
@@ -314,7 +423,7 @@ export default function GestionCompras({
               ${montoTotalComprometido.toLocaleString("es-AR")}
             </strong>
             <span className="kpi-desc">
-              Importes estimados cargados
+              Cotizaciones y compras aprobadas
             </span>
           </div>
         </div>
@@ -329,9 +438,7 @@ export default function GestionCompras({
                   ? "active"
                   : ""
               }`}
-              onClick={() =>
-                setFiltroEstado(filtro.valor)
-              }
+              onClick={() => setFiltroEstado(filtro.valor)}
             >
               {filtro.titulo} ({filtro.cantidad})
             </button>
@@ -348,6 +455,12 @@ export default function GestionCompras({
               pedidosFiltrados.map((pedido) => {
                 const procesando =
                   actualizandoId === pedido.id;
+
+                const editando =
+                  pedidoEditandoId === pedido.id;
+
+                const cotizacionRegistrada =
+                  tieneCotizacion(pedido);
 
                 return (
                   <div
@@ -420,7 +533,7 @@ export default function GestionCompras({
 
                       <div>
                         <span className="detalle-rotulo">
-                          Proveedor sugerido:
+                          Proveedor:
                         </span>
                         <span className="detalle-valor">
                           {pedido.proveedor || "Sin definir"}
@@ -453,32 +566,114 @@ export default function GestionCompras({
                       {pedido.justificacion}
                     </p>
 
+                    {/* FORMULARIO DE COTIZACIÓN */}
+                    {pedido.estado === "En cotización" &&
+                      editando && (
+                        <form
+                          className="formulario-sub-limpio"
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void guardarCotizacion(pedido);
+                          }}
+                          style={{ marginTop: "16px" }}
+                        >
+                          <h4>Registrar cotización</h4>
+
+                          <div className="campo">
+                            <label
+                              htmlFor={`proveedor-${pedido.id}`}
+                            >
+                              Proveedor
+                            </label>
+
+                            <input
+                              id={`proveedor-${pedido.id}`}
+                              className="input-formulario"
+                              type="text"
+                              value={proveedor}
+                              maxLength={200}
+                              disabled={procesando}
+                              onChange={(e) =>
+                                setProveedor(e.target.value)
+                              }
+                              placeholder="Nombre del proveedor"
+                              required
+                            />
+                          </div>
+
+                          <div className="campo">
+                            <label
+                              htmlFor={`monto-${pedido.id}`}
+                            >
+                              Monto estimado ($)
+                            </label>
+
+                            <input
+                              id={`monto-${pedido.id}`}
+                              className="input-formulario"
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={montoEstimado}
+                              disabled={procesando}
+                              onChange={(e) =>
+                                setMontoEstimado(e.target.value)
+                              }
+                              placeholder="Ejemplo: 45000"
+                              required
+                            />
+                          </div>
+
+                          <div className="pedido-acciones">
+                            <button
+                              type="submit"
+                              className="btn-accion btn-aprobar"
+                              disabled={actualizandoId !== null}
+                            >
+                              {procesando
+                                ? "Guardando..."
+                                : "✓ Guardar Cotización"}
+                            </button>
+
+                            <button
+                              type="button"
+                              className="btn-accion btn-rechazar"
+                              disabled={actualizandoId !== null}
+                              onClick={cerrarFormularioCotizacion}
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </form>
+                      )}
+
+                    {/* ACCIONES DEL PEDIDO */}
                     <div className="pedido-acciones">
                       {pedido.estado ===
                         "Pendiente de aprobación" && (
                         <>
-                          <button
-                            type="button"
-                            className="btn-accion btn-aprobar"
-                            disabled={actualizandoId !== null}
-                            onClick={() =>
-                              handleCambiarEstado(
-                                pedido,
-                                "Aprobado"
-                              )
-                            }
-                          >
-                            {procesando
-                              ? "Procesando..."
-                              : "✓ Aprobar Compra"}
-                          </button>
+                          {cotizacionRegistrada && (
+                            <button
+                              type="button"
+                              className="btn-accion btn-aprobar"
+                              disabled={actualizandoId !== null}
+                              onClick={() =>
+                                void handleCambiarEstado(
+                                  pedido,
+                                  "Aprobado"
+                                )
+                              }
+                            >
+                              ✓ Aprobar Compra
+                            </button>
+                          )}
 
                           <button
                             type="button"
                             className="btn-accion btn-cotizar"
                             disabled={actualizandoId !== null}
                             onClick={() =>
-                              handleCambiarEstado(
+                              void handleCambiarEstado(
                                 pedido,
                                 "En cotización"
                               )
@@ -492,7 +687,7 @@ export default function GestionCompras({
                             className="btn-accion btn-rechazar"
                             disabled={actualizandoId !== null}
                             onClick={() =>
-                              handleCambiarEstado(
+                              void handleCambiarEstado(
                                 pedido,
                                 "Rechazado"
                               )
@@ -505,35 +700,52 @@ export default function GestionCompras({
 
                       {pedido.estado === "En cotización" && (
                         <>
-                          <button
-                            type="button"
-                            className="btn-accion btn-aprobar"
-                            disabled={actualizandoId !== null}
-                            onClick={() =>
-                              handleCambiarEstado(
-                                pedido,
-                                "Aprobado"
-                              )
-                            }
-                          >
-                            {procesando
-                              ? "Procesando..."
-                              : "✓ Aprobar Cotización"}
-                          </button>
+                          {!editando && (
+                            <button
+                              type="button"
+                              className="btn-accion btn-cotizar"
+                              disabled={actualizandoId !== null}
+                              onClick={() =>
+                                abrirFormularioCotizacion(pedido)
+                              }
+                            >
+                              {cotizacionRegistrada
+                                ? "Editar Cotización"
+                                : "Registrar Cotización"}
+                            </button>
+                          )}
 
-                          <button
-                            type="button"
-                            className="btn-accion btn-rechazar"
-                            disabled={actualizandoId !== null}
-                            onClick={() =>
-                              handleCambiarEstado(
-                                pedido,
-                                "Rechazado"
-                              )
-                            }
-                          >
-                            ✕ Cancelar
-                          </button>
+                          {cotizacionRegistrada && !editando && (
+                            <button
+                              type="button"
+                              className="btn-accion btn-aprobar"
+                              disabled={actualizandoId !== null}
+                              onClick={() =>
+                                void handleCambiarEstado(
+                                  pedido,
+                                  "Aprobado"
+                                )
+                              }
+                            >
+                              ✓ Aprobar Cotización
+                            </button>
+                          )}
+
+                          {!editando && (
+                            <button
+                              type="button"
+                              className="btn-accion btn-rechazar"
+                              disabled={actualizandoId !== null}
+                              onClick={() =>
+                                void handleCambiarEstado(
+                                  pedido,
+                                  "Rechazado"
+                                )
+                              }
+                            >
+                              ✕ Cancelar Pedido
+                            </button>
+                          )}
                         </>
                       )}
 
@@ -566,5 +778,6 @@ export default function GestionCompras({
     </div>
   );
 }
+
 
 

@@ -86,3 +86,40 @@ export async function actualizarEstadoPedido(
 
   return response.json() as Promise<PedidoCompraAPI>;
 }
+
+
+export interface CotizacionPedidoUpdate {
+  proveedor: string;
+  monto_estimado: number;
+}
+
+export async function actualizarCotizacionPedido(
+  pedidoId: number,
+  datos: CotizacionPedidoUpdate
+): Promise<PedidoCompraAPI> {
+  const baseUrl =
+    import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  const response = await fetch(
+    `${baseUrl}/api/v1/pedidos-compra/${pedidoId}/cotizacion`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(datos),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+
+    throw new Error(
+      typeof error?.detail === "string"
+        ? error.detail
+        : "No se pudo registrar la cotización."
+    );
+  }
+
+  return response.json() as Promise<PedidoCompraAPI>;
+}

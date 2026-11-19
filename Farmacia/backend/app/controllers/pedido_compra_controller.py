@@ -7,6 +7,7 @@ from app.models.pedido_compra import (
     PedidoCompraCreate,
     PedidoCompraRead,
     PedidoCompraEstadoUpdate,
+    PedidoCompraCotizacionUpdate,
 )
 from app.services.pedido_compra_service import (
     PedidoCompraService,
@@ -68,3 +69,20 @@ def actualizar_estado(
         pedido_id,
         datos
     )
+
+
+@router.patch(
+    "/{pedido_id}/cotizacion",
+    response_model=PedidoCompraRead
+)
+def actualizar_cotizacion(
+    pedido_id: int,
+    datos: PedidoCompraCotizacionUpdate,
+    session: Session = Depends(get_session)
+):
+    return service.actualizar_cotizacion(
+        session,
+        pedido_id,
+        datos
+    )
+

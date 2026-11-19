@@ -100,3 +100,19 @@ class PedidoCompraRead(SQLModel):
     monto_estimado: float
     proveedor: str
     notificacion_leida: bool
+
+
+
+class PedidoCompraCotizacionUpdate(SQLModel):
+    proveedor: str = Field(min_length=1, max_length=200)
+    monto_estimado: float = Field(gt=0)
+
+    @field_validator("proveedor")
+    @classmethod
+    def validar_proveedor(cls, valor: str) -> str:
+        valor = valor.strip()
+
+        if not valor:
+            raise ValueError("El proveedor no puede estar vacío")
+
+        return valor
