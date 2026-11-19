@@ -45,36 +45,41 @@ class LoginResponse(BaseModel):
 def seed_usuarios_si_no_existen(session: Session) -> None:
     """Crea los usuarios base si no existen individualmente en la base de datos."""
     usuarios_base = [
-        {
-            "username": "operario",
-            "nombre": "Juan Operario",
-            "rol": RolUsuario.OPERARIO,
-            "password": "1234",
-        },
-        {
-            "username": "mantenimiento",
-            "nombre": "Carlos Mantenimiento",
-            "rol": RolUsuario.MANTENIMIENTO,
-            "password": "1234",
-        },
-        {
-            "username": "encargado",
-            "nombre": "Marta Encargada",
-            "rol": RolUsuario.ENCARGADO,
-            "password": "1234",
-        },
-        {
-            "username": "gerencia",
-            "nombre": "Roberto Gerente",
-            "rol": RolUsuario.GERENCIA,
-            "password": "1234",
-        },
-        {
-            "username": "pepe",
-            "nombre": "Pepe Gerente",
-            "rol": RolUsuario.GERENCIA,
-            "password": "1234",
-        },
+        Usuario(
+            username="operario",
+            nombre="Juan Operario",
+            rol=RolUsuario.OPERARIO,
+            password_hash=hashear_password("1234"),
+            activo=True,
+        ),
+        Usuario(
+            username="mantenimiento",
+            nombre="Carlos Mantenimiento",
+            rol=RolUsuario.MANTENIMIENTO,
+            password_hash=hashear_password("1234"),
+            activo=True,
+        ),
+        Usuario(
+            username="encargado",
+            nombre="Marta Encargada",
+            rol=RolUsuario.ENCARGADO,
+            password_hash=hashear_password("1234"),
+            activo=True,
+        ),
+        Usuario(
+            username="gerencia",
+            nombre="Roberto Gerente",
+            rol=RolUsuario.GERENCIA,
+            password_hash=hashear_password("1234"),
+            activo=True,
+        ),
+        Usuario(
+            username="pepe",
+            nombre="Pepe Gerente",
+            rol=RolUsuario.GERENCIA,
+            password_hash=hashear_password("1234"),
+            activo=True,
+        ),
     ]
 
     for u in usuarios_base:
