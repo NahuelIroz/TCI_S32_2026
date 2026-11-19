@@ -36,3 +36,15 @@ class RepuestoRepository:
     ) -> Repuesto | None:
 
         return session.get(Repuesto, repuesto_id)
+
+    def obtener_por_codigo(
+        self,
+        session: Session,
+        codigo: str
+    ) -> Repuesto | None:
+
+        consulta = select(Repuesto).where(
+            Repuesto.codigo.ilike(codigo.strip())
+        )
+
+        return session.exec(consulta).first()

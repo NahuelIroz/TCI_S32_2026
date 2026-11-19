@@ -22,9 +22,14 @@ from app.controllers.pedido_compra_controller import (
     router as pedido_compra_router
 )
 
+from app.controllers.scanner_controller import (
+    router as scanner_router
+)
+
 from app.database import engine, create_db_and_tables
 
 from app.controllers.auth_controller import router as auth_router, seed_usuarios_si_no_existen
+from app.services.repuesto_service import seed_repuestos_si_no_existen
 from sqlmodel import Session
 
 # Registrar modelos SQLModel
@@ -39,6 +44,7 @@ async def lifespan(app: FastAPI):
     create_db_and_tables()
     with Session(engine) as session:
         seed_usuarios_si_no_existen(session)
+        seed_repuestos_si_no_existen(session)
     yield
 
 app = FastAPI(
@@ -91,3 +97,4 @@ app.include_router(repuesto_router)
 app.include_router(movimiento_stock_router)
 app.include_router(pedido_compra_router)
 app.include_router(auth_router)
+app.include_router(scanner_router)
