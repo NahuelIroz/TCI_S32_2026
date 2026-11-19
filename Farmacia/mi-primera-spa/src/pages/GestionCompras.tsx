@@ -5,6 +5,8 @@ import {
   obtenerPedidosCompra,
   actualizarEstadoPedido,
   actualizarCotizacionPedido,
+  obtenerRecepcionesCompra,
+  type RecepcionCompraAPI,
   type PedidoCompraAPI,
   type EstadoPedido,
 } from "../services/pedidosCompraService";
@@ -13,6 +15,7 @@ import "./styles.css";
 
 interface GestionComprasProps {
   onBack?: () => void;
+  rolUsuario: "MANTENIMIENTO" | "ENCARGADO" | "OPERARIO" | "GERENCIA";
 }
 
 type FiltroEstado =
@@ -25,7 +28,7 @@ type FiltroEstado =
 
 function tieneCotizacion(pedido: PedidoCompraAPI): boolean {
   return (
-    pedido.proveedor.trim().length > 0 &&
+    (pedido.proveedor || "").trim().length > 0 &&
     Number.isFinite(pedido.monto_estimado) &&
     pedido.monto_estimado > 0
   );
@@ -47,7 +50,33 @@ function formatearFecha(fecha: string): string {
 
 export default function GestionCompras({
   onBack,
+  rolUsuario,
 }: GestionComprasProps) {
+  const puedeCotizar = rolUsuario === "MANTENIMIENTO";
+  const puedeDecidir = rolUsuario === "ENCARGADO";
+  const [historial, setHistorial] = useState<Record<number, RecepcionCompraAPI[]>>({});
+  const [historialAbierto, setHistorialAbierto] = useState<number | null>(null);
+  const [historialCargando, setHistorialCargando] = useState(false);
+  const [historialError, setHistorialError] = useState("");
+
+  async function alternarHistorial(pedidoId: number) {
+    if (historialAbierto === pedidoId) {
+      setHistorialAbierto(null);
+      return;
+    }
+    setHistorialAbierto(pedidoId);
+    setHistorialError("");
+    setHistorialCargando(true);
+    try {
+      const recepciones = await obtenerRecepcionesCompra(pedidoId);
+      setHistorial((anterior) => ({ ...anterior, [pedidoId]: recepciones }));
+    } catch (err) {
+      setHistorialError(err instanceof Error ? err.message : "No se pudo consultar el historial.");
+    } finally {
+      setHistorialCargando(false);
+    }
+  }
+
   const [pedidos, setPedidos] = useState<PedidoCompraAPI[]>([]);
   const [filtroEstado, setFiltroEstado] =
     useState<FiltroEstado>("todos");
@@ -122,7 +151,7 @@ export default function GestionCompras({
   }
 
   async function guardarCotizacion(pedido: PedidoCompraAPI) {
-    if (actualizandoId !== null) return;
+    if (!puedeCotizar || pedido.estado !== "En cotización" || actualizandoId !== null) return;
 
     const proveedorLimpio = proveedor.trim();
     const monto = Number(montoEstimado);
@@ -160,7 +189,7 @@ export default function GestionCompras({
 
       setMensajeFeedback(
         `Cotización del pedido ${actualizado.codigo_pedido} ` +
-        `guardada correctamente. Ya puede aprobarse.`
+        `guardada correctamente. Queda disponible para revisión del encargado.`
       );
 
       try {
@@ -186,7 +215,7 @@ export default function GestionCompras({
     pedido: PedidoCompraAPI,
     nuevoEstado: EstadoPedido
   ) {
-    if (actualizandoId !== null) return;
+    if (!puedeDecidir || actualizandoId !== null) return;
 
     if (
       nuevoEstado === "Aprobado" &&
@@ -399,7 +428,7 @@ export default function GestionCompras({
               {totalPendientes}
             </strong>
             <span className="kpi-desc">
-              Requieren tu visto bueno
+              {puedeDecidir ? "Requieren tu visto bueno" : "A la espera del encargado"}
             </span>
           </div>
 
@@ -567,7 +596,7 @@ export default function GestionCompras({
                     </p>
 
                     {/* FORMULARIO DE COTIZACIÓN */}
-                    {pedido.estado === "En cotización" &&
+                    {puedeCotizar && pedido.estado === "En cotización" &&
                       editando && (
                         <form
                           className="formulario-sub-limpio"
@@ -647,108 +676,45 @@ export default function GestionCompras({
                         </form>
                       )}
 
-                    {/* ACCIONES DEL PEDIDO */}
+                    {/* ACCIONES DEL PEDIDO SEGÚN ROL */}
                     <div className="pedido-acciones">
-                      {pedido.estado ===
-                        "Pendiente de aprobación" && (
+                      {puedeDecidir && pedido.estado === "Pendiente de aprobación" && (
                         <>
-                          {cotizacionRegistrada && (
-                            <button
-                              type="button"
-                              className="btn-accion btn-aprobar"
-                              disabled={actualizandoId !== null}
-                              onClick={() =>
-                                void handleCambiarEstado(
-                                  pedido,
-                                  "Aprobado"
-                                )
-                              }
-                            >
-                              ✓ Aprobar Compra
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            className="btn-accion btn-cotizar"
+                          <button type="button" className="btn-accion btn-cotizar"
                             disabled={actualizandoId !== null}
-                            onClick={() =>
-                              void handleCambiarEstado(
-                                pedido,
-                                "En cotización"
-                              )
-                            }
-                          >
+                            onClick={() => void handleCambiarEstado(pedido, "En cotización")}>
                             Enviar a Cotización
                           </button>
-
-                          <button
-                            type="button"
-                            className="btn-accion btn-rechazar"
+                          <button type="button" className="btn-accion btn-rechazar"
                             disabled={actualizandoId !== null}
-                            onClick={() =>
-                              void handleCambiarEstado(
-                                pedido,
-                                "Rechazado"
-                              )
-                            }
-                          >
+                            onClick={() => void handleCambiarEstado(pedido, "Rechazado")}>
                             ✕ Rechazar
                           </button>
                         </>
                       )}
-
-                      {pedido.estado === "En cotización" && (
+                      {puedeCotizar && pedido.estado === "En cotización" && !editando && (
+                        <button type="button" className="btn-accion btn-cotizar"
+                          disabled={actualizandoId !== null}
+                          onClick={() => abrirFormularioCotizacion(pedido)}>
+                          {cotizacionRegistrada ? "Editar Cotización" : "Registrar Cotización"}
+                        </button>
+                      )}
+                      {puedeDecidir && pedido.estado === "En cotización" && (
                         <>
-                          {!editando && (
-                            <button
-                              type="button"
-                              className="btn-accion btn-cotizar"
+                          {cotizacionRegistrada && (
+                            <button type="button" className="btn-accion btn-aprobar"
                               disabled={actualizandoId !== null}
-                              onClick={() =>
-                                abrirFormularioCotizacion(pedido)
-                              }
-                            >
-                              {cotizacionRegistrada
-                                ? "Editar Cotización"
-                                : "Registrar Cotización"}
-                            </button>
-                          )}
-
-                          {cotizacionRegistrada && !editando && (
-                            <button
-                              type="button"
-                              className="btn-accion btn-aprobar"
-                              disabled={actualizandoId !== null}
-                              onClick={() =>
-                                void handleCambiarEstado(
-                                  pedido,
-                                  "Aprobado"
-                                )
-                              }
-                            >
+                              onClick={() => void handleCambiarEstado(pedido, "Aprobado")}>
                               ✓ Aprobar Cotización
                             </button>
                           )}
-
-                          {!editando && (
-                            <button
-                              type="button"
-                              className="btn-accion btn-rechazar"
-                              disabled={actualizandoId !== null}
-                              onClick={() =>
-                                void handleCambiarEstado(
-                                  pedido,
-                                  "Rechazado"
-                                )
-                              }
-                            >
-                              ✕ Cancelar Pedido
-                            </button>
-                          )}
+                          <button type="button" className="btn-accion btn-rechazar"
+                            disabled={actualizandoId !== null}
+                            onClick={() => void handleCambiarEstado(pedido, "Rechazado")}>
+                            ✕ Rechazar Pedido
+                          </button>
                         </>
                       )}
-
                       {pedido.estado === "Aprobado" && (
                         <span className="estado-finalizado-label">
                           ✓ Compra aprobada. Pendiente de
@@ -768,6 +734,43 @@ export default function GestionCompras({
                         </span>
                       )}
                     </div>
+                    {(pedido.estado === "Aprobado" || pedido.estado === "Recibido") && (
+                      <div style={{ marginTop: 16 }}>
+                        <button type="button" className="btn-accion btn-cotizar"
+                          onClick={() => void alternarHistorial(pedido.id)}>
+                          {historialAbierto === pedido.id ? "Ocultar recepciones" : "Ver historial de recepciones"}
+                        </button>
+                        {historialAbierto === pedido.id && (
+                          <div style={{ marginTop: 12 }}>
+                            {historialCargando && <p>Cargando recepciones...</p>}
+                            {historialError && <p className="alerta-error">{historialError}</p>}
+                            {!historialCargando && !historialError && (() => {
+                              const recepciones = historial[pedido.id] ?? [];
+                              const recibido = recepciones.reduce((total, mov) => total + mov.cantidad, 0);
+                              return (
+                                <>
+                                  <p><strong>Solicitado:</strong> {pedido.cantidad} {pedido.unidad} · <strong>Recibido:</strong> {recibido} · <strong>Pendiente:</strong> {Math.max(0, pedido.cantidad - recibido)}</p>
+                                  {recepciones.length === 0 ? (
+                                    <p>No hay recepciones registradas para este pedido.</p>
+                                  ) : (
+                                    <div className="pedido-detalles-grid">
+                                      {recepciones.map((mov) => (
+                                        <div key={mov.id}>
+                                          <strong>Remito: {mov.remito || "Sin remito"}</strong>
+                                          <p>Fecha: {formatearFecha(mov.fecha)}</p>
+                                          <p>Cantidad: +{mov.cantidad} {pedido.unidad}</p>
+                                          <p>Proveedor: {mov.proveedor || "Sin definir"}</p>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })

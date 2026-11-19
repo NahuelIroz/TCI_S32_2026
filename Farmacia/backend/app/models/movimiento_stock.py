@@ -21,6 +21,14 @@ class MovimientoStock(SQLModel, table=True):
         index=True
     )
 
+
+    pedido_compra_id: int | None = Field(
+        default=None,
+        foreign_key="pedidos_compra.id",
+        index=True
+    )
+
+
     tipo: TipoMovimientoStock
 
     cantidad: int = Field(gt=0)
@@ -92,6 +100,7 @@ class MovimientoStockRead(SQLModel):
     proveedor: str | None
     tecnico_delegado: str | None
     observaciones: str | None
+    pedido_compra_id: int | None = None
 
 
 class IngresoStockRead(SQLModel):
@@ -124,4 +133,16 @@ class ConsumoStockRead(SQLModel):
     movimiento: MovimientoStockRead
     stock_anterior: int
     stock_actual: int
+
+
+class RecepcionCompraCreate(IngresoStockCreate):
+    pass
+
+
+class RecepcionCompraRead(IngresoStockRead):
+    pedido_compra_id: int
+    cantidad_solicitada: int
+    cantidad_recibida_acumulada: int
+    cantidad_pendiente: int
+    estado_pedido: str
 

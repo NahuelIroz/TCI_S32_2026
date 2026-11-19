@@ -1,6 +1,11 @@
 
 import { apiGet, apiPost } from "./api";
 
+import type {
+  IngresoStockCreate,
+  IngresoStockResponse,
+} from "./repuestosService";
+
 export type PrioridadPedido = "Baja" | "Media" | "Urgente";
 
 export type EstadoPedido =
@@ -123,3 +128,71 @@ export async function actualizarCotizacionPedido(
 
   return response.json() as Promise<PedidoCompraAPI>;
 }
+
+
+
+export interface RecepcionCompraResponse
+  extends IngresoStockResponse {
+  pedido_compra_id: number;
+  cantidad_solicitada: number;
+  cantidad_recibida_acumulada: number;
+  cantidad_pendiente: number;
+  estado_pedido: EstadoPedido;
+}
+
+export async function registrarRecepcionCompra(
+  pedidoId: number,
+  datos: IngresoStockCreate
+): Promise<RecepcionCompraResponse> {
+  const baseUrl =
+    import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  const response = await fetch(
+    `${baseUrl}/api/v1/repuestos/pedidos-compra/${pedidoId}/recepciones`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(datos),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+
+    throw new Error(
+      typeof error?.detail === "string"
+        ? error.detail
+        : "No se pudo registrar la recepción."
+    );
+  }
+
+  return response.json() as Promise<RecepcionCompraResponse>;
+}
+
+
+export interface RecepcionCompraAPI {
+  id: number;
+  pedido_compra_id: number | null;
+  repuesto_id: number;
+  tipo: string;
+  cantidad: number;
+  motivo: string;
+  fecha: string;
+  remito: string | null;
+  ubicacion: string | null;
+  proveedor: string | null;
+  tecnico_delegado: string | null;
+  observaciones: string | null;
+}
+
+export async function obtenerRecepcionesCompra(
+  pedidoId: number
+): Promise<RecepcionCompraAPI[]> {
+  return apiGet<RecepcionCompraAPI[]>(
+    `/api/v1/repuestos/pedidos-compra/${pedidoId}/recepciones`
+  );
+}
+
+

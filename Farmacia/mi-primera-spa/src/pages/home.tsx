@@ -411,7 +411,14 @@ export default function Home({
   }
 
   if (pantalla === "ingresarStock") {
-    return <IngresarStock onBack={() => setPantalla("home")} />;
+    return (
+      <IngresarStock
+        onBack={() => setPantalla("home")}
+        titulo="Ingresar repuestos al almacén"
+        subtitulo="Registrar ingresos y recepciones de pedidos aprobados"
+        modoRecepcionCompra={true}
+      />
+    );
   }
 
   if (pantalla === "cargarStockRecibido") {
@@ -419,13 +426,19 @@ export default function Home({
       <IngresarStock
         onBack={() => setPantalla("home")}
         titulo="Cargar el stock recibido y sus ubicaciones"
-        subtitulo="RN-08 · Carga de Compra y Ubicaciones"
+        subtitulo="RN-08 · Recepción de pedidos aprobados"
+        modoRecepcionCompra={true}
       />
     );
   }
 
   if (pantalla === "gestionarCompras") {
-    return <GestionCompras onBack={() => setPantalla("home")} />;
+    return (
+      <GestionCompras
+        onBack={() => setPantalla("home")}
+        rolUsuario={usuario.rol}
+      />
+    );
   }
 
   if (pantalla === "supervisarTareas") {
@@ -967,6 +980,14 @@ if (pantalla === "misIncidencias") {
             >
               <NavIcon name="compras" />
               <span>Compras</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("gestionarCompras")}
+            >
+              <NavIcon name="compras" />
+              <span>Cotizar</span>
             </button>
           </>
         )}

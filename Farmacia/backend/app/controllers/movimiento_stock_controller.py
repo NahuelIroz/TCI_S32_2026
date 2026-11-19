@@ -10,6 +10,8 @@ from app.models.movimiento_stock import (
     MovimientoStockRead,
     ConsumoStockCreate,
     ConsumoStockRead,
+    RecepcionCompraCreate,
+    RecepcionCompraRead,
 )
 
 from app.services.movimiento_stock_service import (
@@ -72,3 +74,33 @@ def registrar_consumo(
         datos
     )
 
+
+@router.post(
+    "/pedidos-compra/{pedido_id}/recepciones",
+    response_model=RecepcionCompraRead,
+    status_code=status.HTTP_201_CREATED
+)
+def registrar_recepcion_compra(
+    pedido_id: int,
+    datos: RecepcionCompraCreate,
+    session: Session = Depends(get_session)
+):
+    return service.registrar_recepcion_compra(
+        session,
+        pedido_id,
+        datos
+    )
+
+
+@router.get(
+    "/pedidos-compra/{pedido_id}/recepciones",
+    response_model=list[MovimientoStockRead]
+)
+def listar_recepciones_compra(
+    pedido_id: int,
+    session: Session = Depends(get_session)
+):
+    return service.listar_recepciones_compra(
+        session,
+        pedido_id
+    )
