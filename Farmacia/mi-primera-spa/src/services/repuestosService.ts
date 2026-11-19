@@ -61,6 +61,10 @@ export interface MovimientoStockAPI {
   proveedor: string | null;
   tecnico_delegado: string | null;
   observaciones: string | null;
+  maquina?: string | null;
+  orden_trabajo?: string | null;
+  tecnico?: string | null;
+
 }
 
 // Respuesta del endpoint de ingreso
@@ -97,5 +101,30 @@ export async function obtenerMovimientosRepuesto(
 
   return apiGet<MovimientoStockAPI[]>(
     `/api/v1/repuestos/${repuestoId}/movimientos`
+  );
+}
+
+
+export interface ConsumoStockCreate {
+  cantidad: number;
+  maquina: string;
+  orden_trabajo: string;
+  motivo: string;
+  tecnico: string;
+}
+
+export interface ConsumoStockResponse {
+  movimiento: MovimientoStockAPI;
+  stock_anterior: number;
+  stock_actual: number;
+}
+
+export async function registrarConsumoStock(
+  repuestoId: number,
+  datos: ConsumoStockCreate
+): Promise<ConsumoStockResponse> {
+  return apiPost<ConsumoStockResponse, ConsumoStockCreate>(
+    `/api/v1/repuestos/${repuestoId}/consumos`,
+    datos
   );
 }

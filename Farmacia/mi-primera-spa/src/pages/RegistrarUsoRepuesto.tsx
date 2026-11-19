@@ -1,8 +1,18 @@
-import { useState } from "react";
-import { repuestos, type Repuesto } from "../data/repuestos";
+
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+
+import type { Repuesto } from "../data/repuestos";
 import { reservasIniciales } from "../data/reservas";
+
+import {
+  obtenerRepuestos,
+  obtenerMovimientosRepuesto,
+  registrarConsumoStock,
+  type MovimientoStockAPI,
+} from "../services/repuestosService";
+
 import { servicioNotificaciones } from "../services/notificacionesService";
-import { trazabilidadInicial } from "../data/trazabilidadData";
 import "./styles.css";
 
 interface RegistrarUsoRepuestoProps {
@@ -19,167 +29,328 @@ interface RegistroUso {
   unidad: string;
   motivo: string;
   fecha: string;
-  esConsumoReserva?: boolean;
+  ordenTrabajo: string;
+}
+
+const TECNICO_ACTUAL = "Carlos Gómez (Mantenimiento)";
+
+function formatearFecha(fecha: string): string {
+  const valor = new Date(fecha);
+
+  if (Number.isNaN(valor.getTime())) {
+    return fecha;
+  }
+
+  return valor.toLocaleString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 export default function RegistrarUsoRepuesto({
   onBack,
   onGenerarPedidoCompra,
 }: RegistrarUsoRepuestoProps) {
-  const [listaRepuestos, setListaRepuestos] = useState<Repuesto[]>(repuestos);
-  const [maquina, setMaquina] = useState<string>("Envasadora Rotativa #03");
-  const [repuestoId, setRepuestoId] = useState<number>(listaRepuestos[0]?.id ?? 1);
-  const [cantidad, setCantidad] = useState<number>(1);
-  const [motivo, setMotivo] = useState<string>("Cambio correctivo por vibración y desgaste");
-  const [ordenTrabajo, setOrdenTrabajo] = useState<string>("OT-2026-089");
-  const [mensajeExito, setMensajeExito] = useState<string>("");
-  const [error, setError] = useState<string>("");
-  const [mostrarBotonCompra, setMostrarBotonCompra] = useState<boolean>(false);
+  const [listaRepuestos, setListaRepuestos] = useState<Repuesto[]>([]);
+  const [maquina, setMaquina] = useState("Envasadora Rotativa #03");
+  const [repuestoId, setRepuestoId] = useState<number | null>(null);
+  const [cantidad, setCantidad] = useState(1);
+  const [motivo, setMotivo] = useState(
+    "Cambio correctivo por vibración y desgaste"
+  );
+  const [ordenTrabajo, setOrdenTrabajo] = useState("OT-2026-089");
 
-  const [esPreventivoConReserva, setEsPreventivoConReserva] = useState<boolean>(false);
-  const [reservaIdSeleccionada, setReservaIdSeleccionada] = useState<number | null>(null);
+  const [mensajeExito, setMensajeExito] = useState("");
+  const [error, setError] = useState("");
+  const [mostrarBotonCompra, setMostrarBotonCompra] = useState(false);
 
-  const [historialUsos, setHistorialUsos] = useState<RegistroUso[]>([
-    {
-      id: 1,
-      maquina: "Prensa Hidráulica H-12",
-      repuestoNombre: "Filtro de Aire Compresor Atlas Copco",
-      codigo: "SKU-FLT-880",
-      cantidad: 2,
-      unidad: "unid.",
-      motivo: "Reemplazo de filtro saturado",
-      fecha: "Hoy, 14:30",
-    },
-  ]);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [cargandoHistorial, setCargandoHistorial] = useState(false);
+  const [errorHistorial, setErrorHistorial] = useState("");
 
-  const repuestoActual = listaRepuestos.find((r) => r.id === repuestoId);
+  const [historialUsos, setHistorialUsos] = useState<RegistroUso[]>([]);
 
+  const repuestoActual = listaRepuestos.find(
+    (r) => r.id === repuestoId
+  );
+
+  // Reservas simuladas: solo para bloqueo provisional.
   const reservasActivas = reservasIniciales.filter(
     (res) =>
-      res.repuestoCodigo === repuestoActual?.codigo && res.estado === "Activa"
-  );
-  const totalReservadoActivo = reservasActivas.reduce(
-    (acc, curr) => acc + curr.cantidad,
-    0
-  );
-  const stockLibre = Math.max(
-    0,
-    (repuestoActual?.disponible ?? 0) - totalReservadoActivo
+      res.repuestoCodigo === repuestoActual?.codigo &&
+      res.estado === "Activa"
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setError("");
-    setMostrarBotonCompra(false);
+  const tieneReservasSimuladas = reservasActivas.length > 0;
 
-    if (!repuestoActual) return;
+  async function cargarRepuestos() {
+    const datos = await obtenerRepuestos();
 
-    const cantidadEntera = Math.floor(cantidad);
-    if (cantidadEntera < 1) {
-      setError("RN-01: La cantidad utilizada debe ser un número entero mayor o igual a 1.");
-      return;
-    }
+    setListaRepuestos(datos);
 
-    if (cantidadEntera > repuestoActual.disponible) {
-      setError(
-        `RN-01 Rechazado: Stock físico insuficiente. Stock en depósito: ${repuestoActual.disponible} ${repuestoActual.unidad}. Solicitado: ${cantidadEntera}.`
+    setRepuestoId((actual) => {
+      if (datos.some((r) => r.id === actual)) {
+        return actual;
+      }
+
+      return datos[0]?.id ?? null;
+    });
+
+    return datos;
+  }
+
+  async function cargarHistorial(repuestosActuales: Repuesto[]) {
+    setCargandoHistorial(true);
+    setErrorHistorial("");
+
+    try {
+      const resultados = await Promise.all(
+        repuestosActuales.map(async (repuesto) => {
+          const movimientos = await obtenerMovimientosRepuesto(
+            repuesto.id
+          );
+
+          return movimientos
+            .filter((m) => m.tipo === "CONSUMO")
+            .map((m: MovimientoStockAPI): RegistroUso => ({
+              id: m.id,
+              maquina: m.maquina ?? "No informada",
+              repuestoNombre: repuesto.nombre,
+              codigo: repuesto.codigo,
+              cantidad: m.cantidad,
+              unidad: repuesto.unidad,
+              motivo: m.motivo,
+              fecha: m.fecha,
+              ordenTrabajo: m.orden_trabajo ?? "",
+            }));
+        })
       );
-      setMostrarBotonCompra(true);
-      return;
-    }
 
-    if (!esPreventivoConReserva && cantidadEntera > stockLibre) {
-      setError(
-        `RN-05 Rechazado: Hay ${totalReservadoActivo} ${repuestoActual.unidad} reservadas para mantenimiento preventivo en ${reservasActivas[0]?.maquina}. Stock libre para otras reparaciones: ${stockLibre} ${repuestoActual.unidad}. Exige autorización del Encargado para liberar reservas.`
+      const historial = resultados
+        .flat()
+        .sort(
+          (a, b) =>
+            new Date(b.fecha).getTime() -
+              new Date(a.fecha).getTime() ||
+            b.id - a.id
+        );
+
+      setHistorialUsos(historial);
+    } catch (err) {
+      setErrorHistorial(
+        err instanceof Error
+          ? err.message
+          : "No se pudo consultar el historial de consumos."
       );
-      setMostrarBotonCompra(true);
-      return;
+    } finally {
+      setCargandoHistorial(false);
     }
+  }
 
-    const nuevoStock = repuestoActual.disponible - cantidadEntera;
-    const nuevoEstado =
-      nuevoStock === 0
-        ? "Agotado"
-        : nuevoStock <= repuestoActual.minimo
-        ? "Stock Bajo"
-        : "Disponible";
+  useEffect(() => {
+    let activo = true;
 
-    setListaRepuestos((prev) =>
-      prev.map((r) =>
-        r.id === repuestoActual.id
-          ? { ...r, disponible: nuevoStock, estado: nuevoEstado }
-          : r
-      )
-    );
+    async function iniciar() {
+      try {
+        setCargando(true);
 
-    const globalIndex = repuestos.findIndex((r) => r.id === repuestoActual.id);
-    if (globalIndex !== -1) {
-      repuestos[globalIndex].disponible = nuevoStock;
-      repuestos[globalIndex].estado = nuevoEstado;
-    }
+        const datos = await obtenerRepuestos();
 
-    let detalleReserva = "";
-    if (esPreventivoConReserva && reservaIdSeleccionada) {
-      const idxRes = reservasIniciales.findIndex((res) => res.id === reservaIdSeleccionada);
-      if (idxRes !== -1) {
-        reservasIniciales[idxRes].estado = "Consumida";
-        reservasIniciales[idxRes].motivoLiberacion = `Consumida en preventivo ${ordenTrabajo}`;
-        reservasIniciales[idxRes].fechaLiberacion = "Hoy";
-        detalleReserva = ` (Reserva ${reservasIniciales[idxRes].codigo} liberada y consumida en la misma transacción)`;
+        if (!activo) return;
+
+        setListaRepuestos(datos);
+        setRepuestoId(datos[0]?.id ?? null);
+      } catch (err) {
+        if (!activo) return;
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : "No se pudieron cargar los repuestos."
+        );
+      } finally {
+        if (activo) {
+          setCargando(false);
+        }
       }
     }
 
-    trazabilidadInicial.push({
-      id: `TRZ-0${trazabilidadInicial.length + 10}`,
-      repuestoCodigo: repuestoActual.codigo,
-      repuestoNombre: repuestoActual.nombre,
-      tipo: "uso",
-      titulo: esPreventivoConReserva
-        ? "Consumo en Preventivo (RN-10)"
-        : "Consumo en Reparación (RN-01)",
-      fecha: new Date().toLocaleDateString("es-AR") + " " + new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }),
-      referencia: ordenTrabajo,
-      cantidad: cantidadEntera,
-      unidad: repuestoActual.unidad,
-      usuario: "Carlos Gómez (Mantenimiento)",
-      detalles: `${motivo}. ${detalleReserva}`,
-      maquina,
-    });
+    iniciar();
 
-    servicioNotificaciones.enviarNotificacion(
-      "cambio_parte",
-      `🔧 USO RN-01: ${cantidadEntera} ${repuestoActual.unidad} consumidas en ${maquina}`,
-      ["encargados@planta.farmacia.com", "supervisores@planta.farmacia.com"],
-      `Orden ${ordenTrabajo}: ${repuestoActual.nombre} (${repuestoActual.codigo}). Stock físico restante: ${nuevoStock} ${repuestoActual.unidad}.${detalleReserva}`
-    );
+    return () => {
+      activo = false;
+    };
+  }, []);
 
-   if (nuevoStock <= repuestoActual.minimo) {
-      servicioNotificaciones.enviarNotificacion(
-        "alerta_umbral",
-        `⚠️ ALERTA RN-02: Stock mínimo alcanzado para ${repuestoActual.nombre}`,
-        ["encargados@planta.farmacia.com", "gerencia@planta.farmacia.com", "compras@planta.farmacia.com"],
-        `El repuesto ${repuestoActual.codigo} cayó a ${nuevoStock} ${repuestoActual.unidad} (umbral mínimo: ${repuestoActual.minimo}). Se incorporó a la lista de reposición.`
-      );
+  useEffect(() => {
+    if (cargando || listaRepuestos.length === 0) return;
+
+    void cargarHistorial(listaRepuestos);
+
+    // El historial se carga al obtener inicialmente los repuestos.
+    // Después de un consumo se actualiza explícitamente.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cargando]);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (guardando) return;
+
+    setError("");
+    setMensajeExito("");
+    setMostrarBotonCompra(false);
+
+    if (!repuestoActual) {
+      setError("Seleccioná un repuesto válido.");
+      return;
     }
 
-    const nuevoRegistro: RegistroUso = {
-      id: Date.now(),
-      maquina,
-      repuestoNombre: repuestoActual.nombre,
-      codigo: repuestoActual.codigo,
-      cantidad: cantidadEntera,
-      unidad: repuestoActual.unidad,
-      motivo,
-      fecha: "Recién",
-      esConsumoReserva: esPreventivoConReserva,
-    };
+    if (!Number.isInteger(cantidad) || cantidad < 1) {
+      setError(
+        "RN-01: La cantidad debe ser un número entero mayor o igual a 1."
+      );
+      return;
+    }
 
-    setHistorialUsos([nuevoRegistro, ...historialUsos]);
-    setMensajeExito(
-      `✓ RN-01: Se descontaron ${cantidadEntera} ${repuestoActual.unidad} de ${repuestoActual.nombre} para ${maquina}. Stock físico restante: ${nuevoStock} ${repuestoActual.unidad}.${detalleReserva}`
-    );
-    setEsPreventivoConReserva(false);
-  };
+    if (!maquina.trim() || !ordenTrabajo.trim() || !motivo.trim()) {
+      setError(
+        "Completá la máquina, la orden de trabajo y el motivo."
+      );
+      return;
+    }
+
+    if (tieneReservasSimuladas) {
+      setError(
+        "Este repuesto tiene reservas registradas en los datos de prueba. " +
+        "Su consumo permanecerá bloqueado hasta conectar las reservas " +
+        "con PostgreSQL."
+      );
+      return;
+    }
+
+    if (cantidad > repuestoActual.disponible) {
+      setError(
+        `RN-01: Stock insuficiente. Disponible: ` +
+        `${repuestoActual.disponible} ${repuestoActual.unidad}. ` +
+        `Solicitado: ${cantidad}.`
+      );
+      setMostrarBotonCompra(true);
+      return;
+    }
+
+    setGuardando(true);
+
+    try {
+      const resultado = await registrarConsumoStock(
+        repuestoActual.id,
+        {
+          cantidad,
+          maquina: maquina.trim(),
+          orden_trabajo: ordenTrabajo.trim(),
+          motivo: motivo.trim(),
+          tecnico: TECNICO_ACTUAL,
+        }
+      );
+
+      const nuevoStock = resultado.stock_actual;
+
+      setMensajeExito(
+        `✓ RN-01: Se descontaron ${cantidad} ` +
+        `${repuestoActual.unidad} de ${repuestoActual.nombre} ` +
+        `para ${maquina}. Stock físico restante: ` +
+        `${nuevoStock} ${repuestoActual.unidad}. ` +
+        `Movimiento #${resultado.movimiento.id}.`
+      );
+
+      // Notificar únicamente después de confirmar el consumo.
+      try {
+        servicioNotificaciones.enviarNotificacion(
+          "cambio_parte",
+          `🔧 USO RN-01: ${cantidad} ${repuestoActual.unidad} consumidas en ${maquina}`,
+          [
+            "encargados@planta.farmacia.com",
+            "supervisores@planta.farmacia.com",
+          ],
+          `Orden ${ordenTrabajo}: ${repuestoActual.nombre} ` +
+          `(${repuestoActual.codigo}). Stock restante: ` +
+          `${nuevoStock} ${repuestoActual.unidad}.`
+        );
+
+        if (nuevoStock <= repuestoActual.minimo) {
+          servicioNotificaciones.enviarNotificacion(
+            "alerta_umbral",
+            `⚠️ ALERTA RN-02: Stock mínimo alcanzado para ${repuestoActual.nombre}`,
+            [
+              "encargados@planta.farmacia.com",
+              "gerencia@planta.farmacia.com",
+              "compras@planta.farmacia.com",
+            ],
+            `El repuesto ${repuestoActual.codigo} cayó a ` +
+            `${nuevoStock} ${repuestoActual.unidad} ` +
+            `(umbral mínimo: ${repuestoActual.minimo}).`
+          );
+        }
+      } catch (errorNotificacion) {
+        console.warn(
+          "El consumo se guardó, pero falló una notificación:",
+          errorNotificacion
+        );
+      }
+
+      // Actualizar la información real.
+      try {
+        const repuestosActualizados = await cargarRepuestos();
+        await cargarHistorial(repuestosActualizados);
+      } catch (errorActualizacion) {
+        console.warn(
+          "Consumo guardado, pero falló la actualización de datos:",
+          errorActualizacion
+        );
+
+        setListaRepuestos((anteriores) =>
+          anteriores.map((r) =>
+            r.id === repuestoActual.id
+              ? {
+                  ...r,
+                  disponible: nuevoStock,
+                  estado:
+                    nuevoStock === 0
+                      ? "Agotado"
+                      : nuevoStock <= r.minimo
+                      ? "Stock Bajo"
+                      : "Disponible",
+                }
+              : r
+          )
+        );
+      }
+
+      setCantidad(1);
+    } catch (err) {
+      const mensaje =
+        err instanceof Error
+          ? err.message
+          : "No se pudo registrar el consumo.";
+
+      setError(
+        `No se pudo confirmar el consumo: ${mensaje}. ` +
+        "Verificá el stock antes de reintentar."
+      );
+
+      try {
+        await cargarRepuestos();
+      } catch {
+        // Se conserva el error original.
+      }
+    } finally {
+      setGuardando(false);
+    }
+  }
 
   return (
     <div className="incidencia-container">
@@ -197,24 +368,30 @@ export default function RegistrarUsoRepuesto({
 
       <form className="incidencia-form" onSubmit={handleSubmit}>
         <div className="subpantalla-encabezado">
-        
           <p className="subpantalla-descripcion">
-            Descontá del stock físico las partes utilizadas (≥ 1). Los repuestos retenidos por reserva no pueden usarse para otra máquina sin autorización.
+            Descontá del stock físico las partes utilizadas (≥ 1).
+            Los consumos se registran en PostgreSQL y quedan
+            disponibles en la trazabilidad del repuesto.
           </p>
         </div>
 
         {error && (
           <div className="alerta-error" role="alert">
             <p>⚠️ {error}</p>
-            {mostrarBotonCompra && onGenerarPedidoCompra && repuestoActual && (
-              <button
-                type="button"
-                className="btn-accion btn-cotizar mt-xs"
-                onClick={() => onGenerarPedidoCompra(repuestoActual)}
-              >
-                 Reportar Faltante y Generar Pedido de Compra  →
-              </button>
-            )}
+
+            {mostrarBotonCompra &&
+              onGenerarPedidoCompra &&
+              repuestoActual && (
+                <button
+                  type="button"
+                  className="btn-accion btn-cotizar mt-xs"
+                  onClick={() =>
+                    onGenerarPedidoCompra(repuestoActual)
+                  }
+                >
+                  Reportar Faltante y Generar Pedido de Compra →
+                </button>
+              )}
           </div>
         )}
 
@@ -224,28 +401,50 @@ export default function RegistrarUsoRepuesto({
           </div>
         )}
 
+        {cargando && (
+          <p className="no-items-msg">Cargando repuestos...</p>
+        )}
+
         <div className="campo">
-          <label htmlFor="maquina">Máquina o Equipo reparado</label>
+          <label htmlFor="maquina">
+            Máquina o Equipo reparado
+          </label>
+
           <select
             id="maquina"
             className="input-formulario"
             value={maquina}
             onChange={(e) => setMaquina(e.target.value)}
+            disabled={guardando}
           >
-            <option value="Envasadora Rotativa #03">Envasadora Rotativa #03</option>
-            <option value="Prensa Hidráulica H-12">Prensa Hidráulica H-12</option>
-            <option value="Compresor Central C-01">Compresor Central C-01</option>
-            <option value="Blistera Automática #04">Blistera Automática #04</option>
-            <option value="Lavadora de Ampollas L-02">Lavadora de Ampollas L-02</option>
+            <option value="Envasadora Rotativa #03">
+              Envasadora Rotativa #03
+            </option>
+            <option value="Prensa Hidráulica H-12">
+              Prensa Hidráulica H-12
+            </option>
+            <option value="Compresor Central C-01">
+              Compresor Central C-01
+            </option>
+            <option value="Blistera Automática #04">
+              Blistera Automática #04
+            </option>
+            <option value="Lavadora de Ampollas L-02">
+              Lavadora de Ampollas L-02
+            </option>
           </select>
         </div>
 
         <div className="campo">
-          <label htmlFor="repuesto-usado">Repuesto utilizado</label>
+          <label htmlFor="repuesto-usado">
+            Repuesto utilizado
+          </label>
+
           <select
             id="repuesto-usado"
             className="input-formulario"
-            value={repuestoId}
+            value={repuestoId ?? ""}
+            disabled={cargando || guardando}
             onChange={(e) => {
               setRepuestoId(Number(e.target.value));
               setError("");
@@ -253,9 +452,17 @@ export default function RegistrarUsoRepuesto({
               setMostrarBotonCompra(false);
             }}
           >
+            {listaRepuestos.length === 0 && (
+              <option value="">
+                No hay repuestos disponibles
+              </option>
+            )}
+
             {listaRepuestos.map((r) => (
               <option key={r.id} value={r.id}>
-                {r.codigo} - {r.nombre} (Stock Físico: {r.disponible} {r.unidad})
+                {r.codigo} - {r.nombre}
+                {" "}
+                (Stock Físico: {r.disponible} {r.unidad})
               </option>
             ))}
           </select>
@@ -267,99 +474,110 @@ export default function RegistrarUsoRepuesto({
               <span>Ubicación: </span>
               <strong>{repuestoActual.ubicacion}</strong>
             </div>
+
             <div>
               <span>Stock Físico: </span>
               <strong>
                 {repuestoActual.disponible} {repuestoActual.unidad}
               </strong>
             </div>
+
             <div>
-              <span>Stock Libre (sin reserva): </span>
-              <strong className={stockLibre === 0 ? "text-red" : "text-green"}>
-                {stockLibre} {repuestoActual.unidad}
+              <span>Reservas de prueba: </span>
+              <strong>
+                {tieneReservasSimuladas
+                  ? `${reservasActivas.length} activas (consumo bloqueado)`
+                  : "Ninguna registrada"}
               </strong>
             </div>
+
             <div>
               <span>Umbral Mínimo: </span>
-              <strong>{repuestoActual.minimo} {repuestoActual.unidad}</strong>
+              <strong>
+                {repuestoActual.minimo} {repuestoActual.unidad}
+              </strong>
             </div>
           </div>
         )}
 
-        {reservasActivas.length > 0 && (
+        {tieneReservasSimuladas && (
           <div className="tablero-bloque mt-sm">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={esPreventivoConReserva}
-                onChange={(e) => {
-                  setEsPreventivoConReserva(e.target.checked);
-                  if (e.target.checked && reservasActivas[0]) {
-                    setReservaIdSeleccionada(reservasActivas[0].id);
-                    setMaquina(reservasActivas[0].maquina);
-                  }
-                }}
-              />
-              <strong> Ejecutar mantenimiento preventivo planificado</strong>
-            </label>
-
-            {esPreventivoConReserva && (
-              <div className="form-group mt-xs">
-                <label htmlFor="reservaSelect">Reserva a consumir y liberar en la transacción:</label>
-                <select
-                  id="reservaSelect"
-                  value={reservaIdSeleccionada ?? ""}
-                  onChange={(e) => setReservaIdSeleccionada(Number(e.target.value))}
-                >
-                  {reservasActivas.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.codigo} — {r.cantidad} {r.unidad} para {r.maquina} ({r.motivo})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <p className="subpantalla-descripcion">
+              Este repuesto tiene reservas en los datos de prueba.
+              El consumo está deshabilitado temporalmente hasta
+              implementar la gestión de reservas en PostgreSQL.
+            </p>
           </div>
         )}
 
         <div className="campo">
-          <label htmlFor="cantidad-usada">Cantidad consumida</label>
+          <label htmlFor="cantidad-usada">
+            Cantidad consumida
+          </label>
+
           <input
             id="cantidad-usada"
             type="number"
             min={1}
             step={1}
-            max={repuestoActual?.disponible ?? 1}
             className="input-formulario"
             value={cantidad}
-            onChange={(e) => setCantidad(Number(e.target.value))}
+            onChange={(e) =>
+              setCantidad(Number(e.target.value))
+            }
+            disabled={guardando || cargando}
             required
           />
         </div>
 
         <div className="campo">
-          <label htmlFor="orden-trabajo">N° Orden de Trabajo / Reparación</label>
+          <label htmlFor="orden-trabajo">
+            N° Orden de Trabajo / Reparación
+          </label>
+
           <input
             id="orden-trabajo"
             type="text"
             className="input-formulario"
             value={ordenTrabajo}
-            onChange={(e) => setOrdenTrabajo(e.target.value)}
+            onChange={(e) =>
+              setOrdenTrabajo(e.target.value)
+            }
+            disabled={guardando}
+            maxLength={100}
+            required
           />
         </div>
 
         <div className="campo">
-          <label htmlFor="motivo-reparacion">Motivo o detalle de la reparación</label>
+          <label htmlFor="motivo-reparacion">
+            Motivo o detalle de la reparación
+          </label>
+
           <textarea
             id="motivo-reparacion"
             value={motivo}
             onChange={(e) => setMotivo(e.target.value)}
             placeholder="Describí brevemente la falla resuelta..."
+            disabled={guardando}
+            maxLength={300}
+            required
           />
         </div>
 
-        <button type="submit" className="boton-enviar">
-          Descontar repuestos del stock físico 
+        <button
+          type="submit"
+          className="boton-enviar"
+          disabled={
+            guardando ||
+            cargando ||
+            !repuestoActual ||
+            tieneReservasSimuladas
+          }
+        >
+          {guardando
+            ? "Registrando consumo..."
+            : "Descontar repuestos del stock físico"}
         </button>
       </form>
 
@@ -367,22 +585,52 @@ export default function RegistrarUsoRepuesto({
         <h3 className="historial-usos-titulo">
           Usos registrados recientemente
         </h3>
+
+        {cargandoHistorial && (
+          <p className="no-items-msg">
+            Cargando historial...
+          </p>
+        )}
+
+        {errorHistorial && (
+          <p className="alerta-error" role="alert">
+            {errorHistorial}
+          </p>
+        )}
+
+        {!cargandoHistorial &&
+          !errorHistorial &&
+          historialUsos.length === 0 && (
+            <p className="no-items-msg">
+              Todavía no hay consumos registrados.
+            </p>
+          )}
+
         <div className="historial-usos-lista">
           {historialUsos.map((item) => (
             <div key={item.id} className="uso-card">
               <div className="uso-card-header">
                 <strong>{item.maquina}</strong>
-                <span>{item.fecha}</span>
+                <span>{formatearFecha(item.fecha)}</span>
               </div>
+
               <div className="uso-card-consumo">
-                Consumo: <strong>{item.cantidad} {item.unidad}</strong> de {item.repuestoNombre} ({item.codigo})
-                {item.esConsumoReserva && (
-                  <span className="badge-estado-pedido badge-aprobado ml-xs">
-                     Consumo de Reserva
-                  </span>
-                )}
+                Consumo:{" "}
+                <strong>
+                  {item.cantidad} {item.unidad}
+                </strong>{" "}
+                de {item.repuestoNombre} ({item.codigo})
               </div>
-              <small className="uso-card-motivo">{item.motivo}</small>
+
+              {item.ordenTrabajo && (
+                <small className="uso-card-motivo">
+                  Orden: {item.ordenTrabajo}
+                </small>
+              )}
+
+              <small className="uso-card-motivo">
+                {item.motivo}
+              </small>
             </div>
           ))}
         </div>
@@ -390,3 +638,4 @@ export default function RegistrarUsoRepuesto({
     </div>
   );
 }
+
