@@ -106,9 +106,9 @@ export default function VisualizarIncidencias({
                     </div>
                     <span
                       className={`badge-estado-pedido ${
-                        inc.estado === "Resuelto"
+                        inc.estado === "Resuelta"
                           ? "badge-aprobado"
-                          : inc.estado === "En Reparación"
+                          : inc.estado === "En reparación"
                           ? "badge-cotizacion"
                           : "badge-pendiente"
                       }`}

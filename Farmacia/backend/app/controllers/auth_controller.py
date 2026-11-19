@@ -84,10 +84,17 @@ def seed_usuarios_si_no_existen(session: Session) -> None:
 
     for u in usuarios_base:
         existente = session.exec(
-            select(Usuario).where(Usuario.username == u.username)
+            select(Usuario).where(Usuario.username == u["username"])
         ).first()
         if not existente:
-            session.add(u)
+            nuevo_usuario = Usuario(
+                username=u["username"],
+                nombre=u["nombre"],
+                rol=u["rol"],
+                password_hash=hashear_password(u["password"]),
+                activo=True,
+            )
+            session.add(nuevo_usuario)
 
     session.commit()
 

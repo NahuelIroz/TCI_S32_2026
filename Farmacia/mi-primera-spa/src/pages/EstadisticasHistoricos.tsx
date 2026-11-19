@@ -71,14 +71,18 @@ export default function EstadisticasHistoricos({
           </p>
         </div>
 
-        {/* Gráfico Semestral de Reducción de Fallas */}
+        {/* Resumen Semestral de Reducción de Fallas */}
         <div className="tablero-bloque">
           <div className="tablero-bloque-header">
             <h3>Tendencia Semestral de Incidencias</h3>
           </div>
-        
-
-          
+          <div className="maquinas-resumen-grid">
+            {meses.map((m) => (
+              <div key={m.mes} className="resumen-chip chip-mantenimiento">
+                <strong>{m.mes}:</strong> {m.fallas} fallas ({m.horasParada}h parada)
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Repuestos más consumidos */}
@@ -115,9 +119,18 @@ export default function EstadisticasHistoricos({
           </div>
         </div>
 
-        
+        {/* Costos por sector */}
+        <div className="tablero-bloque">
+          <h3>Distribución de Costos por Sector</h3>
+          <div className="maquinas-resumen-grid">
+            {costosPorSector.map((c) => (
+              <div key={c.sector} className="resumen-chip chip-alerta">
+                <strong>{c.sector}:</strong> {c.monto} ({c.porcentaje}%)
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
-
