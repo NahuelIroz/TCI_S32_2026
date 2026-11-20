@@ -9,6 +9,7 @@ export type Permiso =
   | "incidencias.crear"
   | "maquinas.escanear"
   | "incidencias.consultar"
+  | "incidencias.gestionar"
   | "stock.consultar"
   | "stock.ingresar"
   | "reparaciones.registrar_uso"
@@ -39,6 +40,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     "compras.crear",
     "compras.gestionar",
     "compras.cotizar",
+    "incidencias.gestionar",
   ],
 
   ENCARGADO: [
@@ -50,6 +52,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     "reservas.liberar",
     "stock.consultar",
     "maquinas.consultar",
+    "incidencias.gestionar",
   ],
 
   GERENCIA: [
@@ -237,6 +240,14 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
         icono: "cart-check",
         color: "green",
       },
+      {
+        id: "gestionar-incidencias",
+        permiso: "incidencias.gestionar",
+        titulo: "Gestionar incidencias",
+        descripcion: "Consultar incidencias y actualizar sus estados según el rol",
+        icono: "incidents",
+        color: "blue",
+      },
     ];
   }
 
@@ -281,6 +292,14 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
         descripcion: "Monitorear faltantes críticos, consumo proyectado y puntos de reorden",
         icono: "stock",
         color: "teal",
+      },
+      {
+        id: "gestionar-incidencias",
+        permiso: "incidencias.gestionar",
+        titulo: "Gestionar incidencias",
+        descripcion: "Consultar incidencias y actualizar sus estados según el rol",
+        icono: "incidents",
+        color: "blue",
       },
     ];
   }

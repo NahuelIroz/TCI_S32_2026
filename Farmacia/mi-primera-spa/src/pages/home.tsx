@@ -21,6 +21,7 @@ import TrazabilidadRepuesto from "./TrazabilidadRepuesto";
 import AltaMaquinaria from "./AltaMaquinaria";
 import BuzonNotificaciones from "./BuzonNotificaciones";
 import DetalleIncidencia from "./DetalleIncidencia";
+import GestionIncidencias from "./GestionIncidencias";
 
 import type { Repuesto } from "../data/repuestos";
 import {
@@ -35,6 +36,7 @@ type Pantalla =
   | "incidencia"
   | "misIncidencias"
   | "detalleIncidencia"
+  | "gestionIncidencias"
   | "stock"
   | "scan"
   | "ingresarStock"
@@ -322,6 +324,7 @@ export default function Home({
   };
 
   const abrirDetalleIncidencia = (id: number) => {
+    setPantallaAnterior(pantalla);
     setIncidenciaSeleccionadaId(id);
     setPantalla("detalleIncidencia");
   };
@@ -334,6 +337,11 @@ export default function Home({
       case "mis-incidencias":
         setPantalla("misIncidencias");
         break;
+
+      case "gestionar-incidencias":
+        setPantalla("gestionIncidencias");
+        break;
+
       case "escanear-qr":
         setPantalla("scan");
         break;
@@ -542,7 +550,16 @@ if (pantalla === "detalleIncidencia" && incidenciaSeleccionadaId !== null) {
     <DetalleIncidencia
       incidenciaId={incidenciaSeleccionadaId}
       rolUsuario={usuario.rol}
-      onBack={() => setPantalla("misIncidencias")}
+      onBack={() => setPantalla(pantallaAnterior)}
+    />
+  );
+}
+
+if (pantalla === "gestionIncidencias") {
+  return (
+    <GestionIncidencias
+      onBack={() => setPantalla("home")}
+      onVerDetalle={abrirDetalleIncidencia}
     />
   );
 }
