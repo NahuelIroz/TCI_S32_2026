@@ -196,22 +196,7 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
 
   if (rol === "MANTENIMIENTO") {
     return [
-      {
-        id: "gestionar-repuestos",
-        permiso: "repuestos.gestionar",
-        titulo: "Gestionar repuestos",
-        descripcion: "Agregar, editar, desactivar y reactivar repuestos del almacén",
-        icono: "stock",
-        color: "blue",
-      },
-      {
-        id: "gestionar-maquinas",
-        permiso: "maquinas.gestionar",
-        titulo: "Gestionar máquinas",
-        descripcion: "Administrar las máquinas y equipos de la planta",
-        icono: "machine",
-        color: "teal",
-      },
+      
       {
         id: "ingresar-stock",
         permiso: "stock.ingresar",
@@ -311,6 +296,14 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
         titulo: "Gestionar repuestos",
         descripcion: "Agregar, editar, desactivar y reactivar repuestos del almacén",
         icono: "stock",
+        color: "teal",
+      },
+      {
+        id: "gestionar-maquinas",
+        permiso: "maquinas.gestionar",
+        titulo: "Gestionar máquinas",
+        descripcion: "Agregar, editar, desactivar y reactivar máquinas",
+        icono: "machine",
         color: "teal",
       },
     ];

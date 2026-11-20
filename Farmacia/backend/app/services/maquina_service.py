@@ -1,7 +1,13 @@
 
+from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
-from app.models.maquina import Maquina
+from app.models.maquina import (
+    Maquina,
+    MaquinaCreate,
+    MaquinaUpdate,
+)
 from app.repositories.maquina_repository import MaquinaRepository
 
 
@@ -10,8 +16,11 @@ class MaquinaService:
     def __init__(self, repository: MaquinaRepository):
         self.repository = repository
 
-    def listar(self) -> list[Maquina]:
-        return self.repository.listar()
+    def listar(
+        self,
+        incluir_inactivas: bool = False
+    ) -> list[Maquina]:
+        return self.repository.listar(incluir_inactivas)
 
     def obtener_por_id(self, maquina_id: int) -> Maquina:
         maquina = self.repository.obtener_por_id(maquina_id)
@@ -20,6 +29,92 @@ class MaquinaService:
             raise ValueError("La máquina no existe")
 
         return maquina
+
+    def crear(self, datos: MaquinaCreate) -> Maquina:
+        valores = datos.model_dump()
+
+        for campo in ("codigo", "nombre", "tipo", "sector"):
+            valores[campo] = valores[campo].strip()
+            if not valores[campo]:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"El campo {campo} es obligatorio"
+                )
+
+        if self.repository.obtener_por_codigo(valores["codigo"]):
+            raise HTTPException(
+                status_code=409,
+                detail="Ya existe una máquina con ese código"
+            )
+
+        maquina = Maquina(**valores, activo=True)
+
+        try:
+            return self.repository.crear(maquina)
+        except IntegrityError as error:
+            raise HTTPException(
+                status_code=409,
+                detail="Ya existe una máquina con ese código"
+            ) from error
+
+    def actualizar(
+        self,
+        maquina_id: int,
+        datos: MaquinaUpdate
+    ) -> Maquina:
+
+        maquina = self.obtener_por_id(maquina_id)
+        cambios = datos.model_dump(exclude_unset=True)
+
+        for campo, valor in cambios.items():
+            if valor is None:
+                raise HTTPException(
+                    status_code=422,
+                    detail=f"El campo {campo} no admite null"
+                )
+
+            if campo in ("codigo", "nombre", "tipo", "sector"):
+                valor = valor.strip()
+                if not valor:
+                    raise HTTPException(
+                        status_code=422,
+                        detail=f"El campo {campo} es obligatorio"
+                    )
+                cambios[campo] = valor
+
+        if "codigo" in cambios:
+            existente = self.repository.obtener_por_codigo(
+                cambios["codigo"]
+            )
+
+            if existente is not None and existente.id != maquina_id:
+                raise HTTPException(
+                    status_code=409,
+                    detail="Ya existe otra máquina con ese código"
+                )
+
+        for campo, valor in cambios.items():
+            setattr(maquina, campo, valor)
+
+        try:
+            return self.repository.actualizar(maquina)
+        except IntegrityError as error:
+            raise HTTPException(
+                status_code=409,
+                detail="Ya existe otra máquina con ese código"
+            ) from error
+
+    def cambiar_activo(
+        self,
+        maquina_id: int,
+        activo: bool
+    ) -> Maquina:
+
+        maquina = self.obtener_por_id(maquina_id)
+        maquina.activo = activo
+
+        return self.repository.actualizar(maquina)
+
 
 
 MAQUINAS_INICIALES = [

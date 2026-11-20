@@ -23,6 +23,7 @@ import BuzonNotificaciones from "./BuzonNotificaciones";
 import DetalleIncidencia from "./DetalleIncidencia";
 import GestionIncidencias from "./GestionIncidencias";
 import GestionRepuestos from "./GestionRepuestos";
+import GestionMaquinas from "./GestionMaquinas";
 
 import type { Repuesto } from "../data/repuestos";
 import {
@@ -472,6 +473,14 @@ export default function Home({
     );
   }
 
+  if (pantalla === "gestionarMaquinas" && usuario.rol === "ENCARGADO") {
+    return (
+      <GestionMaquinas
+        onBack={() => setPantalla("home")}
+      />
+    );
+  }
+
   if (pantalla === "supervisarTareas") {
     return <SupervisarTareas onBack={() => setPantalla("home")} />;
   }
@@ -745,6 +754,18 @@ if (pantalla === "misIncidencias") {
               >
                 Gestionar Repuestos
               </a>
+
+              <a
+                className="nav-link"
+                href="#gestionar-maquinas"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setPantalla("gestionarMaquinas");
+                }}
+              >
+                Gestionar Máquinas
+              </a>
+
               <a
                 className="nav-link"
                 href="#trazabilidad"
@@ -1048,6 +1069,14 @@ if (pantalla === "misIncidencias") {
             >
               <NavIcon name="stock" />
               <span>Repuestos</span>
+            </button>
+            <button
+              className="mobile-nav-item"
+              type="button"
+              onClick={() => setPantalla("gestionarMaquinas")}
+            >
+              <NavIcon name="machine" />
+              <span>Máquinas</span>
             </button>
           </>
         )}
