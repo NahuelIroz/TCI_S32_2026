@@ -431,11 +431,20 @@ export default function TrazabilidadRepuesto({
                       {" "}{movimiento.cantidad}
                       {" "}{repuestoInfo?.unidad ?? "unid."}
                     </span>
+                    {movimiento.tipo === "CONSUMO" && (
+                      <span>
+                        <strong>Incidencia:</strong>{" "}
+                        {movimiento.incidencia_id != null
+                          ? `INC-${String(movimiento.incidencia_id).padStart(4, "0")}`
+                          : "Sin incidencia asociada"}
+                      </span>
+                    )}
 
                     <span>
                       <strong>Responsable:</strong>
                       {" "}
-                      {movimiento.tecnico_delegado ??
+                      {movimiento.tecnico ??
+                        movimiento.tecnico_delegado ??
                         "No informado"}
                     </span>
 
