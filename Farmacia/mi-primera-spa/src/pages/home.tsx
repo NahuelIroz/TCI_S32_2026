@@ -22,6 +22,7 @@ import AltaMaquinaria from "./AltaMaquinaria";
 import BuzonNotificaciones from "./BuzonNotificaciones";
 import DetalleIncidencia from "./DetalleIncidencia";
 import GestionIncidencias from "./GestionIncidencias";
+import GestionRepuestos from "./GestionRepuestos";
 
 import type { Repuesto } from "../data/repuestos";
 import {
@@ -54,6 +55,8 @@ type Pantalla =
   | "notificacionesCompras"
   | "trazabilidad"
   | "altaMaquinaria"
+  | "gestionarRepuestos"
+  | "gestionarMaquinas"
   | "buzonCorreos";
 
 interface HomeProps {
@@ -365,6 +368,18 @@ export default function Home({
       case "cargar-stock-recibido":
         setPantalla("cargarStockRecibido");
         break;
+
+      case "gestionar-repuestos":
+        if (usuario.rol === "ENCARGADO") {
+          setPantalla("gestionarRepuestos");
+        }
+        break;
+
+      case "gestionar-maquinas":
+        if (usuario.rol === "ENCARGADO") {
+          setPantalla("gestionarMaquinas");
+        }
+        break;
       case "supervisar-tareas":
         setPantalla("supervisarTareas");
         break;
@@ -445,6 +460,14 @@ export default function Home({
       <GestionCompras
         onBack={() => setPantalla("home")}
         rolUsuario={usuario.rol}
+      />
+    );
+  }
+
+  if (pantalla === "gestionarRepuestos" && usuario.rol === "ENCARGADO") {
+    return (
+      <GestionRepuestos
+        onBack={() => setPantalla("home")}
       />
     );
   }
@@ -711,25 +734,16 @@ if (pantalla === "misIncidencias") {
               >
                 Supervisar Tareas
               </a>
+              
               <a
                 className="nav-link"
-                href="#reservas"
+                href="#gestionar-repuestos"
                 onClick={(e) => {
                   e.preventDefault();
-                  setPantalla("liberarReservas");
+                  setPantalla("gestionarRepuestos");
                 }}
               >
-                Liberar Reservas
-              </a>
-              <a
-                className="nav-link"
-                href="#reposicion"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("necesidadesReposicion");
-                }}
-              >
-                Reposición
+                Gestionar Repuestos
               </a>
               <a
                 className="nav-link"
@@ -1030,18 +1044,10 @@ if (pantalla === "misIncidencias") {
             <button
               className="mobile-nav-item"
               type="button"
-              onClick={() => setPantalla("liberarReservas")}
+              onClick={() => setPantalla("gestionarRepuestos")}
             >
               <NavIcon name="stock" />
-              <span>Reservas</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("necesidadesReposicion")}
-            >
-              <NavIcon name="tools" />
-              <span>Reposición</span>
+              <span>Repuestos</span>
             </button>
           </>
         )}

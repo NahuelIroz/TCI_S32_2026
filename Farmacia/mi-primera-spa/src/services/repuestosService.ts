@@ -133,3 +133,96 @@ export async function registrarConsumoStock(
     datos
   );
 }
+
+
+export interface RepuestoGestion {
+  id: number;
+  codigo: string;
+  nombre: string;
+  disponible: number;
+  minimo: number;
+  unidad: string;
+  ubicacion: string;
+  estado: string;
+  activo: boolean;
+}
+
+export interface RepuestoGestionCreate {
+  codigo: string;
+  nombre: string;
+  minimo: number;
+  unidad: string;
+  ubicacion: string;
+}
+
+export type RepuestoGestionUpdate = Partial<RepuestoGestionCreate>;
+
+const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+async function peticionGestion<T>(
+  ruta: string,
+  metodo: "PATCH" | "POST",
+  datos?: unknown
+): Promise<T> {
+  const token = localStorage.getItem("token");
+
+  const respuesta = await fetch(`${API_URL}${ruta}`, {
+    method: metodo,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    ...(datos !== undefined ? { body: JSON.stringify(datos) } : {}),
+  });
+
+  if (!respuesta.ok) {
+    const error = await respuesta.json().catch(() => null);
+    const detalle = error?.detail;
+
+    throw new Error(
+      typeof detalle === "string"
+        ? detalle
+        : `Error HTTP ${respuesta.status}`
+    );
+  }
+
+  return respuesta.json() as Promise<T>;
+}
+
+export function listarRepuestosGestion(): Promise<RepuestoGestion[]> {
+  return apiGet<RepuestoGestion[]>(
+    "/api/v1/repuestos?incluir_inactivos=true"
+  );
+}
+
+export function crearRepuesto(
+  datos: RepuestoGestionCreate
+): Promise<RepuestoGestion> {
+  return peticionGestion<RepuestoGestion>(
+    "/api/v1/repuestos",
+    "POST",
+    datos
+  );
+}
+
+export function editarRepuesto(
+  id: number,
+  datos: RepuestoGestionUpdate
+): Promise<RepuestoGestion> {
+  return peticionGestion<RepuestoGestion>(
+    `/api/v1/repuestos/${id}`,
+    "PATCH",
+    datos
+  );
+}
+
+export function cambiarActivoRepuesto(
+  id: number,
+  activo: boolean
+): Promise<RepuestoGestion> {
+  return peticionGestion<RepuestoGestion>(
+    `/api/v1/repuestos/${id}/${activo ? "reactivar" : "desactivar"}`,
+    "PATCH"
+  );
+}
+

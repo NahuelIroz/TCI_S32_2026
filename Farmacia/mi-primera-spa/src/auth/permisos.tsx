@@ -23,6 +23,8 @@ export type Permiso =
   | "tableros.consultar"
   | "maquinas.consultar"
   | "estadisticas.consultar"
+  | "repuestos.gestionar"
+  | "maquinas.gestionar"
   | "compras.notificaciones";
 
 export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
@@ -53,6 +55,8 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     "stock.consultar",
     "maquinas.consultar",
     "incidencias.gestionar",
+    "repuestos.gestionar",
+    "maquinas.gestionar",
   ],
 
   GERENCIA: [
@@ -193,6 +197,22 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
   if (rol === "MANTENIMIENTO") {
     return [
       {
+        id: "gestionar-repuestos",
+        permiso: "repuestos.gestionar",
+        titulo: "Gestionar repuestos",
+        descripcion: "Agregar, editar, desactivar y reactivar repuestos del almacén",
+        icono: "stock",
+        color: "blue",
+      },
+      {
+        id: "gestionar-maquinas",
+        permiso: "maquinas.gestionar",
+        titulo: "Gestionar máquinas",
+        descripcion: "Administrar las máquinas y equipos de la planta",
+        icono: "machine",
+        color: "teal",
+      },
+      {
         id: "ingresar-stock",
         permiso: "stock.ingresar",
         titulo: "Ingresar repuestos al almacén",
@@ -256,15 +276,15 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
       {
         id: "gestionar-compras",
         permiso: "compras.gestionar",
-        titulo: "Gestionar la lista de compras.",
-        descripcion: "Revisar cotizaciones, autorizar o rechazar solicitudes de compra",
+        titulo: "Gestionar la lista de compras",
+        descripcion: "Revisar cotizaciones, pedidos y necesidades de reposición",
         icono: "cart-check",
         color: "green",
       },
       {
         id: "cargar-stock-recibido",
         permiso: "stock.ingresar",
-        titulo: "Cargar el stock recibido y sus ubicaciones.",
+        titulo: "Cargar el stock recibido y sus ubicaciones",
         descripcion: "Registrar remitos de ingreso y asignar ubicación física en depósito",
         icono: "stock-in",
         color: "blue",
@@ -272,26 +292,10 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
       {
         id: "supervisar-tareas",
         permiso: "tareas.supervisar",
-        titulo: "Delegar tareas y supervisar su cumplimiento.",
+        titulo: "Delegar tareas y supervisar su cumplimiento",
         descripcion: "Asignar trabajos a técnicos y auditar avance de preventivos",
         icono: "tasks",
         color: "orange",
-      },
-      {
-        id: "liberar-reservas",
-        permiso: "reservas.liberar",
-        titulo: "Autorizar la liberación de repuestos reservados.",
-        descripcion: "Aprobación formal de piezas retenidas para mantenimiento (RN-05)",
-        icono: "shield-check",
-        color: "purple",
-      },
-      {
-        id: "necesidades-reposicion",
-        permiso: "stock.consultar",
-        titulo: "Consultar pedidos y necesidades de reposición.",
-        descripcion: "Monitorear faltantes críticos, consumo proyectado y puntos de reorden",
-        icono: "stock",
-        color: "teal",
       },
       {
         id: "gestionar-incidencias",
@@ -300,6 +304,14 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
         descripcion: "Consultar incidencias y actualizar sus estados según el rol",
         icono: "incidents",
         color: "blue",
+      },
+      {
+        id: "gestionar-repuestos",
+        permiso: "repuestos.gestionar",
+        titulo: "Gestionar repuestos",
+        descripcion: "Agregar, editar, desactivar y reactivar repuestos del almacén",
+        icono: "stock",
+        color: "teal",
       },
     ];
   }

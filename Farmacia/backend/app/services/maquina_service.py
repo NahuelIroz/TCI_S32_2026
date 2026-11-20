@@ -118,16 +118,13 @@ MAQUINAS_INICIALES = [
 
 def seed_maquinas_si_no_existen(session: Session) -> None:
     for datos in MAQUINAS_INICIALES:
-        statement = select(Maquina).where(Maquina.codigo == datos["codigo"])
+        statement = select(Maquina).where(
+            Maquina.codigo == datos["codigo"]
+        )
         existente = session.exec(statement).first()
+
         if existente is None:
-            maquina = Maquina(**datos)
-            session.add(maquina)
-        else:
-            # Actualizar campos por si la tabla ya existía con el esquema viejo
-            for campo, valor in datos.items():
-                if campo != "codigo":
-                    setattr(existente, campo, valor)
-            session.add(existente)
+            session.add(Maquina(**datos))
+
     session.commit()
 
