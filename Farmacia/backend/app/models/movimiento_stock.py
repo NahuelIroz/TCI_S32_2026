@@ -21,6 +21,12 @@ class MovimientoStock(SQLModel, table=True):
         index=True
     )
 
+    incidencia_id: int | None = Field(
+        default=None,
+        foreign_key="incidencias.id",
+        index=True
+    )
+
 
     pedido_compra_id: int | None = Field(
         default=None,
@@ -94,7 +100,7 @@ class MovimientoStockRead(SQLModel):
     cantidad: int
     motivo: str
     fecha: datetime
-
+    incidencia_id: int | None = None
     remito: str | None
     ubicacion: str | None
     proveedor: str | None
@@ -118,6 +124,8 @@ class ConsumoStockCreate(SQLModel):
     cantidad: int = Field(gt=0)
 
     maquina: str = Field(min_length=1, max_length=200)
+
+    incidencia_id: int = Field(gt=0)
 
     orden_trabajo: str = Field(
         min_length=1,

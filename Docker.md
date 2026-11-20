@@ -190,6 +190,9 @@ Cerrar los procesos locales de Vite (`npm run dev`), FastAPI (`uv run uvicorn ..
 - Restaurar el respaldo de demostración siguiendo la sección 6.
 - Recordar que el volumen de tu PC **no se copia automáticamente** a otra computadora.
 
+### Para conectar a la base desde terminal
+docker exec -it farmacia_db psql -U farmacia -d farmacia_db
+
 ## 8. Lista de verificación antes de presentar
 
 - [ ] Docker Desktop funciona en la computadora de presentación.

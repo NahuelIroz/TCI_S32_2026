@@ -12,6 +12,9 @@ import {
   type MovimientoStockAPI,
 } from "../services/repuestosService";
 
+import { obtenerIncidencias, type IncidenciaAPI } from "../services/incidenciasService";
+import { obtenerMaquinas, type MaquinaAPI } from "../services/maquinasService";
+
 import { servicioNotificaciones } from "../services/notificacionesService";
 import "./styles.css";
 
@@ -23,6 +26,7 @@ interface RegistrarUsoRepuestoProps {
 interface RegistroUso {
   id: number;
   maquina: string;
+  incidenciaId: number | null;
   repuestoNombre: string;
   codigo: string;
   cantidad: number;
@@ -55,7 +59,10 @@ export default function RegistrarUsoRepuesto({
   onGenerarPedidoCompra,
 }: RegistrarUsoRepuestoProps) {
   const [listaRepuestos, setListaRepuestos] = useState<Repuesto[]>([]);
-  const [maquina, setMaquina] = useState("Envasadora Rotativa #03");
+  const [incidencias, setIncidencias] = useState<IncidenciaAPI[]>([]);
+  const [maquinas, setMaquinas] = useState<MaquinaAPI[]>([]);
+  const [incidenciaId, setIncidenciaId] = useState<number | null>(null);
+  const [cargandoIncidencias, setCargandoIncidencias] = useState(true);
   const [repuestoId, setRepuestoId] = useState<number | null>(null);
   const [cantidad, setCantidad] = useState(1);
   const [motivo, setMotivo] = useState(
@@ -77,6 +84,20 @@ export default function RegistrarUsoRepuesto({
   const repuestoActual = listaRepuestos.find(
     (r) => r.id === repuestoId
   );
+
+  const incidenciasDisponibles = incidencias.filter(
+    (inc) => inc.estado === "EN_REPARACION"
+  );
+
+  const incidenciaSeleccionada = incidenciasDisponibles.find(
+    (inc) => inc.id === incidenciaId
+  );
+
+  const maquinaSeleccionada = maquinas.find(
+    (m) => m.id === incidenciaSeleccionada?.maquina_id
+  );
+
+  const maquina = maquinaSeleccionada?.nombre ?? "";
 
   // Reservas simuladas: solo para bloqueo provisional.
   const reservasActivas = reservasIniciales.filter(
@@ -119,6 +140,7 @@ export default function RegistrarUsoRepuesto({
             .map((m: MovimientoStockAPI): RegistroUso => ({
               id: m.id,
               maquina: m.maquina ?? "No informada",
+              incidenciaId: m.incidencia_id ?? null,
               repuestoNombre: repuesto.nombre,
               codigo: repuesto.codigo,
               cantidad: m.cantidad,
@@ -196,6 +218,31 @@ export default function RegistrarUsoRepuesto({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cargando]);
 
+  useEffect(() => {
+    let activo = true;
+
+    async function cargarIncidencias() {
+      try {
+        setCargandoIncidencias(true);
+        const [datosIncidencias, datosMaquinas] = await Promise.all([
+          obtenerIncidencias(),
+          obtenerMaquinas(),
+        ]);
+        if (!activo) return;
+        setIncidencias(datosIncidencias);
+        setMaquinas(datosMaquinas);
+      } catch (err) {
+        if (!activo) return;
+        setError(err instanceof Error ? err.message : "No se pudieron cargar las incidencias.");
+      } finally {
+        if (activo) setCargandoIncidencias(false);
+      }
+    }
+
+    void cargarIncidencias();
+    return () => { activo = false; };
+  }, []);
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
@@ -204,6 +251,11 @@ export default function RegistrarUsoRepuesto({
     setError("");
     setMensajeExito("");
     setMostrarBotonCompra(false);
+
+    if (!incidenciaSeleccionada || !maquinaSeleccionada) {
+      setError("Seleccioná una incidencia válida en reparación.");
+      return;
+    }
 
     if (!repuestoActual) {
       setError("Seleccioná un repuesto válido.");
@@ -217,7 +269,7 @@ export default function RegistrarUsoRepuesto({
       return;
     }
 
-    if (!maquina.trim() || !ordenTrabajo.trim() || !motivo.trim()) {
+    if (!ordenTrabajo.trim() || !motivo.trim()) {
       setError(
         "Completá la máquina, la orden de trabajo y el motivo."
       );
@@ -249,8 +301,9 @@ export default function RegistrarUsoRepuesto({
       const resultado = await registrarConsumoStock(
         repuestoActual.id,
         {
+          incidencia_id: incidenciaSeleccionada.id,
           cantidad,
-          maquina: maquina.trim(),
+          maquina: maquinaSeleccionada.nombre,
           orden_trabajo: ordenTrabajo.trim(),
           motivo: motivo.trim(),
           tecnico: TECNICO_ACTUAL,
@@ -406,33 +459,43 @@ export default function RegistrarUsoRepuesto({
         )}
 
         <div className="campo">
-          <label htmlFor="maquina">
-            Máquina o Equipo reparado
-          </label>
-
+          <label htmlFor="incidencia-consumo">Incidencia asociada</label>
           <select
-            id="maquina"
+            id="incidencia-consumo"
+            className="input-formulario"
+            value={incidenciaId ?? ""}
+            onChange={(e) => {
+              setIncidenciaId(e.target.value ? Number(e.target.value) : null);
+              setError("");
+              setMensajeExito("");
+            }}
+            disabled={cargandoIncidencias || guardando}
+            required
+          >
+            <option value="">Seleccionar incidencia...</option>
+            {incidenciasDisponibles.map((inc) => {
+              const maquinaIncidencia = maquinas.find((m) => m.id === inc.maquina_id);
+              return (
+                <option key={inc.id} value={inc.id}>
+                  {inc.codigo} - {maquinaIncidencia?.nombre ?? "Máquina desconocida"}
+                </option>
+              );
+            })}
+          </select>
+          {!cargandoIncidencias && incidenciasDisponibles.length === 0 && (
+            <small>No hay incidencias en reparación disponibles.</small>
+          )}
+        </div>
+
+        <div className="campo">
+          <label htmlFor="maquina-consumo">Máquina o equipo reparado</label>
+          <input
+            id="maquina-consumo"
+            type="text"
             className="input-formulario"
             value={maquina}
-            onChange={(e) => setMaquina(e.target.value)}
-            disabled={guardando}
-          >
-            <option value="Envasadora Rotativa #03">
-              Envasadora Rotativa #03
-            </option>
-            <option value="Prensa Hidráulica H-12">
-              Prensa Hidráulica H-12
-            </option>
-            <option value="Compresor Central C-01">
-              Compresor Central C-01
-            </option>
-            <option value="Blistera Automática #04">
-              Blistera Automática #04
-            </option>
-            <option value="Lavadora de Ampollas L-02">
-              Lavadora de Ampollas L-02
-            </option>
-          </select>
+            readOnly
+          />
         </div>
 
         <div className="campo">
@@ -572,6 +635,9 @@ export default function RegistrarUsoRepuesto({
             guardando ||
             cargando ||
             !repuestoActual ||
+            !incidenciaSeleccionada ||
+            !maquinaSeleccionada ||
+            cargandoIncidencias ||
             tieneReservasSimuladas
           }
         >
@@ -622,6 +688,10 @@ export default function RegistrarUsoRepuesto({
                 de {item.repuestoNombre} ({item.codigo})
               </div>
 
+              {item.incidenciaId !== null && (
+                <small className="uso-card-motivo">Incidencia: INC-{String(item.incidenciaId).padStart(4, "0")}</small>
+              )}
+
               {item.ordenTrabajo && (
                 <small className="uso-card-motivo">
                   Orden: {item.ordenTrabajo}
@@ -638,4 +708,6 @@ export default function RegistrarUsoRepuesto({
     </div>
   );
 }
+
+
 

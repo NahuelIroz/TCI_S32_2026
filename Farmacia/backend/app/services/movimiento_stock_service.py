@@ -28,7 +28,8 @@ from app.models.movimiento_stock import (
     RecepcionCompraCreate,
     RecepcionCompraRead,
 )
-
+from app.models.incidencia import Incidencia, EstadoIncidencia
+from app.models.maquina import Maquina
 
 class MovimientoStockService:
 
@@ -137,6 +138,47 @@ class MovimientoStockService:
                 detail="Los campos obligatorios no pueden estar vacíos"
             )
 
+        # Verificar que la incidencia exista
+        incidencia = session.get(
+            Incidencia,
+            datos.incidencia_id
+        )
+
+        if incidencia is None:
+            raise HTTPException(
+                status_code=404,
+                detail="La incidencia seleccionada no existe"
+            )
+
+        # Solo se permiten consumos en incidencias en reparación
+        if incidencia.estado != EstadoIncidencia.EN_REPARACION:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Solo se pueden registrar consumos "
+                    "en incidencias que estén En reparación"
+                )
+            )
+
+        # Obtener la máquina real asociada
+        maquina_incidencia = session.get(
+            Maquina,
+            incidencia.maquina_id
+        )
+
+        if maquina_incidencia is None:
+            raise HTTPException(
+                status_code=404,
+                detail="La máquina asociada a la incidencia no existe"
+            )
+
+        # Evitar inconsistencias entre máquina e incidencia
+        if datos.maquina.strip() != maquina_incidencia.nombre:
+            raise HTTPException(
+                status_code=422,
+                detail="La máquina no coincide con la incidencia seleccionada"
+            )
+
         try:
             # 1. Obtener repuesto bloqueando su fila
             repuesto = (
@@ -173,10 +215,11 @@ class MovimientoStockService:
             # 4. Registrar movimiento
             movimiento = MovimientoStock(
                 repuesto_id=repuesto_id,
+                incidencia_id=incidencia.id,
                 tipo=TipoMovimientoStock.CONSUMO,
                 cantidad=datos.cantidad,
                 motivo=datos.motivo.strip(),
-                maquina=datos.maquina.strip(),
+                maquina=maquina_incidencia.nombre,
                 orden_trabajo=datos.orden_trabajo.strip(),
                 tecnico=datos.tecnico.strip()
             )

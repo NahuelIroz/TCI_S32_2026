@@ -71,6 +71,7 @@ export interface MovimientoStockAPI {
   maquina?: string | null;
   orden_trabajo?: string | null;
   tecnico?: string | null;
+  incidencia_id: number | null;
 
 }
 
@@ -109,6 +110,7 @@ export async function obtenerMovimientosRepuesto(
 
 
 export interface ConsumoStockCreate {
+  incidencia_id: number;
   cantidad: number;
   maquina: string;
   orden_trabajo: string;
