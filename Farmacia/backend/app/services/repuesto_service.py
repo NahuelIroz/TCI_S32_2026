@@ -1,8 +1,14 @@
 
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session
 
-from app.models.repuesto import Repuesto, RepuestoRead
+from app.models.repuesto import (
+    Repuesto,
+    RepuestoRead,
+    RepuestoCreate,
+    RepuestoUpdate,
+)
 from app.repositories.repuesto_repository import RepuestoRepository
 
 
@@ -12,7 +18,6 @@ class RepuestoService:
         self.repository = RepuestoRepository()
 
     def calcular_estado(self, repuesto: Repuesto) -> str:
-
         if repuesto.disponible == 0:
             return "Agotado"
 
@@ -21,11 +26,7 @@ class RepuestoService:
 
         return "Disponible"
 
-    def convertir_respuesta(
-        self,
-        repuesto: Repuesto
-    ) -> RepuestoRead:
-
+    def convertir_respuesta(self, repuesto: Repuesto) -> RepuestoRead:
         return RepuestoRead(
             id=repuesto.id,
             codigo=repuesto.codigo,
@@ -34,24 +35,24 @@ class RepuestoService:
             minimo=repuesto.minimo,
             unidad=repuesto.unidad,
             ubicacion=repuesto.ubicacion,
-            estado=self.calcular_estado(repuesto)
+            estado=self.calcular_estado(repuesto),
+            activo=repuesto.activo,
         )
 
     def listar(
         self,
         session: Session,
-        buscar: str | None = None
+        buscar: str | None = None,
+        incluir_inactivos: bool = False,
     ) -> list[RepuestoRead]:
 
         repuestos = self.repository.listar(
             session,
-            buscar
+            buscar,
+            incluir_inactivos
         )
 
-        return [
-            self.convertir_respuesta(repuesto)
-            for repuesto in repuestos
-        ]
+        return [self.convertir_respuesta(r) for r in repuestos]
 
     def obtener_por_id(
         self,
@@ -59,16 +60,10 @@ class RepuestoService:
         repuesto_id: int
     ) -> RepuestoRead:
 
-        repuesto = self.repository.obtener_por_id(
-            session,
-            repuesto_id
-        )
+        repuesto = self.repository.obtener_por_id(session, repuesto_id)
 
         if repuesto is None:
-            raise HTTPException(
-                status_code=404,
-                detail="Repuesto no encontrado"
-            )
+            raise HTTPException(404, "Repuesto no encontrado")
 
         return self.convertir_respuesta(repuesto)
 
@@ -78,22 +73,117 @@ class RepuestoService:
         codigo: str
     ) -> RepuestoRead:
 
-        repuesto = self.repository.obtener_por_codigo(
-            session,
-            codigo
-        )
+        repuesto = self.repository.obtener_por_codigo(session, codigo)
 
         if repuesto is None:
             raise HTTPException(
-                status_code=404,
-                detail=f"No se encontró ningún repuesto con el código '{codigo}'"
+                404,
+                f"No se encontró ningún repuesto con el código '{codigo}'"
             )
 
         return self.convertir_respuesta(repuesto)
 
+    def crear(
+        self,
+        session: Session,
+        datos: RepuestoCreate
+    ) -> RepuestoRead:
+
+        codigo = datos.codigo.strip()
+        nombre = datos.nombre.strip()
+
+        if not codigo or not nombre:
+            raise HTTPException(422, "Código y nombre son obligatorios")
+
+        if self.repository.obtener_por_codigo(session, codigo):
+            raise HTTPException(409, "Ya existe un repuesto con ese código")
+
+        repuesto = Repuesto(
+            **datos.model_dump(exclude={"codigo", "nombre"}),
+            codigo=codigo,
+            nombre=nombre,
+            disponible=0,
+            activo=True,
+        )
+
+        try:
+            repuesto = self.repository.crear(session, repuesto)
+        except IntegrityError as error:
+            session.rollback()
+            raise HTTPException(
+                409, "Ya existe un repuesto con ese código"
+            ) from error
+
+        return self.convertir_respuesta(repuesto)
+
+    def actualizar(
+        self,
+        session: Session,
+        repuesto_id: int,
+        datos: RepuestoUpdate
+    ) -> RepuestoRead:
+
+        repuesto = self.repository.obtener_por_id(session, repuesto_id)
+
+        if repuesto is None:
+            raise HTTPException(404, "Repuesto no encontrado")
+
+        cambios = datos.model_dump(exclude_unset=True)
+
+        for campo in ("codigo", "nombre"):
+            if campo in cambios:
+                valor = cambios[campo]
+                if valor is None or not valor.strip():
+                    raise HTTPException(422, f"El campo {campo} es obligatorio")
+                cambios[campo] = valor.strip()
+
+        if "codigo" in cambios:
+            existente = self.repository.obtener_por_codigo(
+                session, cambios["codigo"]
+            )
+            if existente is not None and existente.id != repuesto_id:
+                raise HTTPException(409, "Ya existe otro repuesto con ese código")
+
+        for campo, valor in cambios.items():
+            if valor is None:
+                raise HTTPException(422, f"El campo {campo} no admite null")
+            setattr(repuesto, campo, valor)
+
+        try:
+            repuesto = self.repository.actualizar(session, repuesto)
+        except IntegrityError as error:
+            session.rollback()
+            raise HTTPException(
+                409, "Ya existe otro repuesto con ese código"
+            ) from error
+
+        return self.convertir_respuesta(repuesto)
+
+    def cambiar_activo(
+        self,
+        session: Session,
+        repuesto_id: int,
+        activo: bool
+    ) -> RepuestoRead:
+
+        repuesto = self.repository.obtener_por_id(session, repuesto_id)
+
+        if repuesto is None:
+            raise HTTPException(404, "Repuesto no encontrado")
+
+        repuesto.activo = activo
+        repuesto = self.repository.actualizar(session, repuesto)
+
+        return self.convertir_respuesta(repuesto)
+
+
 
 def seed_repuestos_si_no_existen(session: Session) -> None:
-    """Inserta los repuestos base del catálogo si no existen en la base de datos."""
+    """
+    Inserta los repuestos iniciales solamente si no existen.
+    No modifica repuestos existentes ni sus cantidades de stock.
+    """
+
     from sqlmodel import select
 
     repuestos_base = [
@@ -131,11 +221,15 @@ def seed_repuestos_si_no_existen(session: Session) -> None:
         ),
     ]
 
-    for r in repuestos_base:
+    for repuesto in repuestos_base:
+
         existente = session.exec(
-            select(Repuesto).where(Repuesto.codigo == r.codigo)
+            select(Repuesto).where(
+                Repuesto.codigo == repuesto.codigo
+            )
         ).first()
-        if not existente:
-            session.add(r)
+
+        if existente is None:
+            session.add(repuesto)
 
     session.commit()

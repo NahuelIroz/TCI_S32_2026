@@ -21,6 +21,9 @@ import TrazabilidadRepuesto from "./TrazabilidadRepuesto";
 import AltaMaquinaria from "./AltaMaquinaria";
 import BuzonNotificaciones from "./BuzonNotificaciones";
 import DetalleIncidencia from "./DetalleIncidencia";
+import GestionIncidencias from "./GestionIncidencias";
+import GestionRepuestos from "./GestionRepuestos";
+import GestionMaquinas from "./GestionMaquinas";
 
 import type { Repuesto } from "../data/repuestos";
 import {
@@ -35,6 +38,7 @@ type Pantalla =
   | "incidencia"
   | "misIncidencias"
   | "detalleIncidencia"
+  | "gestionIncidencias"
   | "stock"
   | "scan"
   | "ingresarStock"
@@ -52,6 +56,8 @@ type Pantalla =
   | "notificacionesCompras"
   | "trazabilidad"
   | "altaMaquinaria"
+  | "gestionarRepuestos"
+  | "gestionarMaquinas"
   | "buzonCorreos";
 
 interface HomeProps {
@@ -322,6 +328,7 @@ export default function Home({
   };
 
   const abrirDetalleIncidencia = (id: number) => {
+    setPantallaAnterior(pantalla);
     setIncidenciaSeleccionadaId(id);
     setPantalla("detalleIncidencia");
   };
@@ -334,6 +341,11 @@ export default function Home({
       case "mis-incidencias":
         setPantalla("misIncidencias");
         break;
+
+      case "gestionar-incidencias":
+        setPantalla("gestionIncidencias");
+        break;
+
       case "escanear-qr":
         setPantalla("scan");
         break;
@@ -356,6 +368,18 @@ export default function Home({
         break;
       case "cargar-stock-recibido":
         setPantalla("cargarStockRecibido");
+        break;
+
+      case "gestionar-repuestos":
+        if (usuario.rol === "ENCARGADO") {
+          setPantalla("gestionarRepuestos");
+        }
+        break;
+
+      case "gestionar-maquinas":
+        if (usuario.rol === "ENCARGADO") {
+          setPantalla("gestionarMaquinas");
+        }
         break;
       case "supervisar-tareas":
         setPantalla("supervisarTareas");
@@ -437,6 +461,22 @@ export default function Home({
       <GestionCompras
         onBack={() => setPantalla("home")}
         rolUsuario={usuario.rol}
+      />
+    );
+  }
+
+  if (pantalla === "gestionarRepuestos" && usuario.rol === "ENCARGADO") {
+    return (
+      <GestionRepuestos
+        onBack={() => setPantalla("home")}
+      />
+    );
+  }
+
+  if (pantalla === "gestionarMaquinas" && usuario.rol === "ENCARGADO") {
+    return (
+      <GestionMaquinas
+        onBack={() => setPantalla("home")}
       />
     );
   }
@@ -542,7 +582,16 @@ if (pantalla === "detalleIncidencia" && incidenciaSeleccionadaId !== null) {
     <DetalleIncidencia
       incidenciaId={incidenciaSeleccionadaId}
       rolUsuario={usuario.rol}
-      onBack={() => setPantalla("misIncidencias")}
+      onBack={() => setPantalla(pantallaAnterior)}
+    />
+  );
+}
+
+if (pantalla === "gestionIncidencias") {
+  return (
+    <GestionIncidencias
+      onBack={() => setPantalla("home")}
+      onVerDetalle={abrirDetalleIncidencia}
     />
   );
 }
@@ -694,26 +743,29 @@ if (pantalla === "misIncidencias") {
               >
                 Supervisar Tareas
               </a>
+              
               <a
                 className="nav-link"
-                href="#reservas"
+                href="#gestionar-repuestos"
                 onClick={(e) => {
                   e.preventDefault();
-                  setPantalla("liberarReservas");
+                  setPantalla("gestionarRepuestos");
                 }}
               >
-                Liberar Reservas
+                Gestionar Repuestos
               </a>
+
               <a
                 className="nav-link"
-                href="#reposicion"
+                href="#gestionar-maquinas"
                 onClick={(e) => {
                   e.preventDefault();
-                  setPantalla("necesidadesReposicion");
+                  setPantalla("gestionarMaquinas");
                 }}
               >
-                Reposición
+                Gestionar Máquinas
               </a>
+
               <a
                 className="nav-link"
                 href="#trazabilidad"
@@ -1013,18 +1065,18 @@ if (pantalla === "misIncidencias") {
             <button
               className="mobile-nav-item"
               type="button"
-              onClick={() => setPantalla("liberarReservas")}
+              onClick={() => setPantalla("gestionarRepuestos")}
             >
               <NavIcon name="stock" />
-              <span>Reservas</span>
+              <span>Repuestos</span>
             </button>
             <button
               className="mobile-nav-item"
               type="button"
-              onClick={() => setPantalla("necesidadesReposicion")}
+              onClick={() => setPantalla("gestionarMaquinas")}
             >
-              <NavIcon name="tools" />
-              <span>Reposición</span>
+              <NavIcon name="machine" />
+              <span>Máquinas</span>
             </button>
           </>
         )}
