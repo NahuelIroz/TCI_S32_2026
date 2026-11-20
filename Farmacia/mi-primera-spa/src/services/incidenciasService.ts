@@ -88,3 +88,76 @@ export async function cambiarEstadoIncidencia(
   return respuesta.json() as Promise<IncidenciaAPI>;
 }
 
+
+// ==========================================
+// FOTOGRAFÍAS DE INCIDENCIAS
+// ==========================================
+
+export interface FotoIncidenciaAPI {
+  id: number;
+  incidencia_id: number;
+  nombre_archivo: string;
+  fecha_subida: string;
+  url: string;
+}
+
+// Subir fotografías de una incidencia
+export async function subirFotosIncidencia(
+  incidenciaId: number,
+  fotos: File[]
+): Promise<FotoIncidenciaAPI[]> {
+  const API_URL =
+    import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  const formData = new FormData();
+
+  fotos.forEach((foto) => {
+    formData.append("archivos", foto);
+  });
+
+  const respuesta = await fetch(
+    `${API_URL}/api/v1/incidencias/${incidenciaId}/fotos`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+
+  if (!respuesta.ok) {
+    const error = await respuesta.json().catch(() => null);
+
+    throw new Error(
+      typeof error?.detail === "string"
+        ? error.detail
+        : `Error HTTP ${respuesta.status}`
+    );
+  }
+
+  return respuesta.json() as Promise<FotoIncidenciaAPI[]>;
+}
+
+// Consultar fotografías de una incidencia
+export async function obtenerFotosIncidencia(
+  incidenciaId: number
+): Promise<FotoIncidenciaAPI[]> {
+  return apiGet<FotoIncidenciaAPI[]>(
+    `/api/v1/incidencias/${incidenciaId}/fotos`
+  );
+}
+
+
+export function urlFotoIncidencia(ruta: string): string {
+  const API_URL =
+    import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  // Si el backend devuelve una URL completa, usarla directamente.
+  if (ruta.startsWith("http://") || ruta.startsWith("https://")) {
+    return ruta;
+  }
+
+  // Si devuelve una ruta relativa, agregar la dirección del backend.
+  return `${API_URL.replace(/\/$/, "")}/${ruta.replace(/^\//, "")}`;
+}
+
+
+

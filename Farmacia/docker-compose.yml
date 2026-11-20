@@ -1,7 +1,7 @@
 
 services:
   db:
-    image: postgres:16-alpine
+    image: postgres:16
     container_name: farmacia_db
     restart: unless-stopped
     environment:
@@ -13,7 +13,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U farmacia -d farmacia_db"]
+      test:
+        - CMD-SHELL
+        - pg_isready -U farmacia -d farmacia_db
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,11 +30,11 @@ services:
       - "8000:8000"
     environment:
       DATABASE_URL: postgresql+psycopg://farmacia:farmacia_dev@db:5432/farmacia_db
-    volumes:
-      - ./backend/app:/app/app
     depends_on:
       db:
         condition: service_healthy
+    volumes:
+      - incidencias_fotos:/app/uploads/incidencias
 
   frontend:
     build:
@@ -42,10 +44,10 @@ services:
     restart: unless-stopped
     ports:
       - "5173:5173"
-    volumes:
-      - ./mi-primera-spa/src:/app/src
     depends_on:
       - backend
 
 volumes:
   postgres_data:
+  incidencias_fotos:
+

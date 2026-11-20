@@ -1,3 +1,4 @@
+
 """Controlador para autenticación y login de usuarios."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -40,66 +41,68 @@ class LoginResponse(BaseModel):
     usuario: UsuarioResponse
 
 
-
+# ==========================================
+# CREAR USUARIOS DE PRUEBA
+# ==========================================
 
 def seed_usuarios_si_no_existen(session: Session) -> None:
-    """Crea los usuarios base si no existen individualmente en la base de datos."""
+    """Crea los usuarios base si no existen en la base de datos."""
+
     usuarios_base = [
-        Usuario(
-            username="operario",
-            nombre="Juan Operario",
-            rol=RolUsuario.OPERARIO,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
-        Usuario(
-            username="mantenimiento",
-            nombre="Carlos Mantenimiento",
-            rol=RolUsuario.MANTENIMIENTO,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
-        Usuario(
-            username="encargado",
-            nombre="Marta Encargada",
-            rol=RolUsuario.ENCARGADO,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
-        Usuario(
-            username="gerencia",
-            nombre="Roberto Gerente",
-            rol=RolUsuario.GERENCIA,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
-        Usuario(
-            username="pepe",
-            nombre="Pepe Gerente",
-            rol=RolUsuario.GERENCIA,
-            password_hash=hashear_password("1234"),
-            activo=True,
-        ),
+        {
+            "username": "operario",
+            "nombre": "Juan Operario",
+            "rol": RolUsuario.OPERARIO,
+        },
+        {
+            "username": "mantenimiento",
+            "nombre": "Carlos Mantenimiento",
+            "rol": RolUsuario.MANTENIMIENTO,
+        },
+        {
+            "username": "encargado",
+            "nombre": "Marta Encargada",
+            "rol": RolUsuario.ENCARGADO,
+        },
+        {
+            "username": "gerencia",
+            "nombre": "Roberto Gerente",
+            "rol": RolUsuario.GERENCIA,
+        },
+        {
+            "username": "pepe",
+            "nombre": "Pepe Gerente",
+            "rol": RolUsuario.GERENCIA,
+        },
     ]
 
     for u in usuarios_base:
+
         existente = session.exec(
-            select(Usuario).where(Usuario.username == u["username"])
-        ).first()
-        if not existente:
-            nuevo_usuario = Usuario(
-                username=u["username"],
-                nombre=u["nombre"],
-                rol=u["rol"],
-                password_hash=hashear_password(u["password"]),
-                activo=True,
+            select(Usuario).where(
+                Usuario.username == u["username"]
             )
-            session.add(nuevo_usuario)
+        ).first()
+
+        if existente:
+            continue
+
+        nuevo_usuario = Usuario(
+            username=u["username"],
+            nombre=u["nombre"],
+            rol=u["rol"],
+            password_hash=hashear_password("1234"),
+            activo=True,
+        )
+
+        session.add(nuevo_usuario)
 
     session.commit()
 
 
-
+# ==========================================
+# LOGIN
+# ==========================================
 
 @router.post("/login", response_model=LoginResponse)
 def login(
@@ -108,7 +111,10 @@ def login(
 ):
     nombre_usuario = datos.username.strip().lower()
 
-    consulta = select(Usuario).where(Usuario.username == nombre_usuario)
+    consulta = select(Usuario).where(
+        Usuario.username == nombre_usuario
+    )
+
     usuario = session.exec(consulta).first()
 
     if not usuario or not usuario.activo:
@@ -117,7 +123,10 @@ def login(
             detail="Usuario o contraseña incorrectos"
         )
 
-    if not verificar_password(datos.password, usuario.password_hash):
+    if not verificar_password(
+        datos.password,
+        usuario.password_hash
+    ):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Usuario o contraseña incorrectos"
