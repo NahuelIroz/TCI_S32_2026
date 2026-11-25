@@ -5,9 +5,13 @@ from sqlmodel import Session, select
 
 from app.models.maquina import (
     Maquina,
+    MaquinaAltaBOMRead,
     MaquinaCreate,
+    MaquinaRead,
     MaquinaUpdate,
+    RepuestoBOMRead,
 )
+from app.models.repuesto import Repuesto
 from app.repositories.maquina_repository import MaquinaRepository
 
 
@@ -18,9 +22,15 @@ class MaquinaService:
 
     def listar(
         self,
-        incluir_inactivas: bool = False
+        incluir_inactivas: bool = False,
+        estado: str | None = None,
+        sector: str | None = None,
     ) -> list[Maquina]:
-        return self.repository.listar(incluir_inactivas)
+        return self.repository.listar(
+            incluir_inactivas=incluir_inactivas,
+            estado=estado,
+            sector=sector,
+        )
 
     def obtener_por_id(self, maquina_id: int) -> Maquina:
         maquina = self.repository.obtener_por_id(maquina_id)
@@ -114,6 +124,74 @@ class MaquinaService:
         maquina.activo = activo
 
         return self.repository.actualizar(maquina)
+
+    def crear_con_bom(self, datos: MaquinaCreate) -> MaquinaAltaBOMRead:
+        maquina = self.crear(datos)
+        session = self.repository.session
+
+        plantilla_bom = [
+            {
+                "codigo": f"SKU-{maquina.codigo}-ROD",
+                "nombre": f"Rodamiento de Precisión Alta Temp. para {maquina.nombre}",
+                "minimo": 4,
+                "unidad": "unid.",
+                "ubicacion": "Pasillo B · Estante 1",
+            },
+            {
+                "codigo": f"SKU-{maquina.codigo}-COR",
+                "nombre": f"Correa Sincrónica Reforzada para {maquina.nombre}",
+                "minimo": 2,
+                "unidad": "unid.",
+                "ubicacion": "Pasillo C · Estante 2",
+            },
+            {
+                "codigo": f"SKU-{maquina.codigo}-VLV",
+                "nombre": f"Válvula Reguladora de Flujo 24V para {maquina.nombre}",
+                "minimo": 3,
+                "unidad": "unid.",
+                "ubicacion": "Pasillo B · Gabinete 3",
+            },
+        ]
+
+        repuestos_creados: list[RepuestoBOMRead] = []
+        for item in plantilla_bom:
+            existente = session.exec(
+                select(Repuesto).where(Repuesto.codigo == item["codigo"])
+            ).first()
+            if existente is None:
+                nuevo_rep = Repuesto(
+                    codigo=item["codigo"],
+                    nombre=item["nombre"],
+                    disponible=item["minimo"],
+                    minimo=item["minimo"],
+                    unidad=item["unidad"],
+                    ubicacion=item["ubicacion"],
+                    activo=True,
+                )
+                session.add(nuevo_rep)
+                session.flush()
+                rep_obj = nuevo_rep
+            else:
+                rep_obj = existente
+
+            repuestos_creados.append(
+                RepuestoBOMRead(
+                    id=rep_obj.id or 0,
+                    codigo=rep_obj.codigo,
+                    nombre=rep_obj.nombre,
+                    minimo_sugerido=rep_obj.minimo,
+                    unidad=rep_obj.unidad,
+                    ubicacion_sugerida=rep_obj.ubicacion,
+                )
+            )
+
+        session.commit()
+
+        return MaquinaAltaBOMRead(
+            maquina=MaquinaRead.model_validate(maquina, from_attributes=True),
+            repuestos_generados=repuestos_creados,
+        )
+
 
 
 

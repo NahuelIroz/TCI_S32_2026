@@ -39,6 +39,33 @@ export type MaquinaGestionCreate = Omit<
   "id" | "activo"
 >;
 
+export interface RepuestoBOMAPI {
+  id: number;
+  codigo: string;
+  nombre: string;
+  minimo_sugerido: number;
+  unidad: string;
+  ubicacion_sugerida: string;
+}
+
+export interface MaquinaAltaBOMAPI {
+  maquina: MaquinaGestion;
+  repuestos_generados: RepuestoBOMAPI[];
+}
+
+export async function listarMaquinasActivas(): Promise<MaquinaGestion[]> {
+  return apiGet<MaquinaGestion[]>("/api/v1/maquinas");
+}
+
+export async function crearMaquinaConBOM(
+  datos: MaquinaGestionCreate
+): Promise<MaquinaAltaBOMAPI> {
+  return apiPost<MaquinaAltaBOMAPI, MaquinaGestionCreate>(
+    "/api/v1/maquinas/alta-bom",
+    datos
+  );
+}
+
 export async function listarMaquinasGestion(): Promise<MaquinaGestion[]> {
   return apiGet<MaquinaGestion[]>(
     "/api/v1/maquinas?incluir_inactivas=true"

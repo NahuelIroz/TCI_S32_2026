@@ -54,3 +54,18 @@ class MaquinaActivoUpdate(SQLModel):
 class MaquinaRead(MaquinaBase):
     id: int
     activo: bool
+
+
+class RepuestoBOMRead(SQLModel):
+    id: int
+    codigo: str
+    nombre: str
+    minimo_sugerido: int
+    unidad: str
+    ubicacion_sugerida: str
+
+
+class MaquinaAltaBOMRead(SQLModel):
+    maquina: MaquinaRead
+    repuestos_generados: list[RepuestoBOMRead]
+

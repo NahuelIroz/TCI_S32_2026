@@ -27,6 +27,33 @@ export async function obtenerIncidencias(): Promise<IncidenciaAPI[]> {
   return apiGet<IncidenciaAPI[]>("/api/v1/incidencias");
 }
 
+export interface IncidenciaDetalleAPI {
+  id: number;
+  codigo: string;
+  maquina_id: number;
+  codigo_maquina: string;
+  maquina: string;
+  usuario_reportante_id: number;
+  tecnico: string;
+  descripcion: string;
+  turno: "Mañana" | "Tarde" | "Noche";
+  prioridad: "BAJA" | "MEDIA" | "ALTA" | "CRITICA";
+  estado: EstadoIncidenciaAPI;
+  fecha_reporte: string;
+  adjuntos: number;
+}
+
+export async function obtenerIncidenciasDetalladas(
+  estado?: string,
+  maquinaId?: number
+): Promise<IncidenciaDetalleAPI[]> {
+  const params = new URLSearchParams();
+  if (estado) params.append("estado", estado);
+  if (maquinaId) params.append("maquina_id", maquinaId.toString());
+  const query = params.toString() ? `?${params.toString()}` : "";
+  return apiGet<IncidenciaDetalleAPI[]>(`/api/v1/incidencias/detalles${query}`);
+}
+
 
 
 export interface CrearIncidenciaDTO {

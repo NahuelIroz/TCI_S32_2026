@@ -195,4 +195,79 @@ export async function obtenerRecepcionesCompra(
   );
 }
 
+export async function decisionGerenciaPedido(
+  pedidoId: number,
+  estado: "Aprobado" | "Rechazado"
+): Promise<PedidoCompraAPI> {
+  const baseUrl =
+    import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  const response = await fetch(
+    `${baseUrl}/api/v1/pedidos-compra/${pedidoId}/decision-gerencia`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ estado }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(
+      typeof error?.detail === "string"
+        ? error.detail
+        : "No se pudo procesar la decisión de Gerencia."
+    );
+  }
+
+  return response.json() as Promise<PedidoCompraAPI>;
+}
+
+export async function aprobarTodosPendientesGerencia(): Promise<PedidoCompraAPI[]> {
+  return apiPost<PedidoCompraAPI[], Record<string, never>>(
+    "/api/v1/pedidos-compra/aprobar-pendientes",
+    {}
+  );
+}
+
+export async function marcarNotificacionPedidoLeida(
+  pedidoId: number,
+  notificacion_leida = true
+): Promise<PedidoCompraAPI> {
+  const baseUrl =
+    import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+
+  const response = await fetch(
+    `${baseUrl}/api/v1/pedidos-compra/${pedidoId}/notificacion-leida`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ notificacion_leida }),
+    }
+  );
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => null);
+    throw new Error(
+      typeof error?.detail === "string"
+        ? error.detail
+        : "No se pudo actualizar la notificación."
+    );
+  }
+
+  return response.json() as Promise<PedidoCompraAPI>;
+}
+
+export async function marcarTodasNotificacionesPedidosLeidas(): Promise<PedidoCompraAPI[]> {
+  return apiPost<PedidoCompraAPI[], Record<string, never>>(
+    "/api/v1/pedidos-compra/marcar-todas-leidas",
+    {}
+  );
+}
+
+
 

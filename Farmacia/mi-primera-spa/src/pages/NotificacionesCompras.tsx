@@ -1,79 +1,172 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  pedidosCompraIniciales,
-  type PedidoCompraItem,
-} from "../data/pedidosCompraData";
+  obtenerPedidosCompra,
+  decisionGerenciaPedido,
+  aprobarTodosPendientesGerencia,
+  marcarNotificacionPedidoLeida,
+  marcarTodasNotificacionesPedidosLeidas,
+  type PedidoCompraAPI,
+} from "../services/pedidosCompraService";
 import "./styles.css";
 
 interface NotificacionesComprasProps {
   onBack?: () => void;
 }
 
+function formatearFecha(fecha: string): string {
+  const valor = new Date(fecha);
+  if (Number.isNaN(valor.getTime())) {
+    return fecha;
+  }
+  return valor.toLocaleDateString("es-AR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 export default function NotificacionesCompras({
   onBack,
 }: NotificacionesComprasProps) {
-  const [pedidos, setPedidos] = useState<PedidoCompraItem[]>(pedidosCompraIniciales);
+  const [pedidos, setPedidos] = useState<PedidoCompraAPI[]>([]);
+  const [cargando, setCargando] = useState<boolean>(true);
+  const [procesandoId, setProcesandoId] = useState<number | null>(null);
+  const [error, setError] = useState<string>("");
   const [filtro, setFiltro] = useState<"todos" | "pendientes" | "aprobados" | "urgentes">("todos");
   const [mensajeFeedback, setMensajeFeedback] = useState<string>("");
 
-  const handleAprobarCompra = (id: string) => {
-    const target = pedidos.find((p) => p.id === id);
-    setPedidos((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, estado: "Aprobado", notificacionLeida: true } : p
-      )
-    );
-    setMensajeFeedback(
-      `✓ Compra ${id} (${target?.repuestoNombre}) APROBADA exitosamente por Gerencia.`
-    );
+  useEffect(() => {
+    let montado = true;
+
+    async function cargar() {
+      try {
+        setCargando(true);
+        setError("");
+        const data = await obtenerPedidosCompra();
+        if (montado) {
+          setPedidos(data);
+        }
+      } catch (err) {
+        if (montado) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "No se pudieron cargar las solicitudes de compra."
+          );
+        }
+      } finally {
+        if (montado) {
+          setCargando(false);
+        }
+      }
+    }
+
+    void cargar();
+
+    return () => {
+      montado = false;
+    };
+  }, []);
+
+  const handleAprobarCompra = async (pedido: PedidoCompraAPI) => {
+    try {
+      setProcesandoId(pedido.id);
+      setError("");
+      const actualizado = await decisionGerenciaPedido(pedido.id, "Aprobado");
+      setPedidos((prev) =>
+        prev.map((p) => (p.id === actualizado.id ? actualizado : p))
+      );
+      setMensajeFeedback(
+        `✓ Compra ${actualizado.codigo_pedido} (${actualizado.repuesto_nombre}) APROBADA exitosamente por Gerencia.`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No se pudo aprobar la compra."
+      );
+    } finally {
+      setProcesandoId(null);
+    }
   };
 
-  const handleRechazarCompra = (id: string) => {
-    const target = pedidos.find((p) => p.id === id);
-    setPedidos((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, estado: "Rechazado", notificacionLeida: true } : p
-      )
-    );
-    setMensajeFeedback(
-      `✕ Compra ${id} (${target?.repuestoNombre}) rechazada.`
-    );
+  const handleRechazarCompra = async (pedido: PedidoCompraAPI) => {
+    try {
+      setProcesandoId(pedido.id);
+      setError("");
+      const actualizado = await decisionGerenciaPedido(pedido.id, "Rechazado");
+      setPedidos((prev) =>
+        prev.map((p) => (p.id === actualizado.id ? actualizado : p))
+      );
+      setMensajeFeedback(
+        `✕ Compra ${actualizado.codigo_pedido} (${actualizado.repuesto_nombre}) rechazada.`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No se pudo rechazar la compra."
+      );
+    } finally {
+      setProcesandoId(null);
+    }
   };
 
-  const handleAprobarTodasPendientes = () => {
+  const handleAprobarTodasPendientes = async () => {
     const pendientes = pedidos.filter(
       (p) => p.estado === "Pendiente de aprobación" || p.estado === "En cotización"
     );
     if (pendientes.length === 0) return;
 
-    setPedidos((prev) =>
-      prev.map((p) =>
-        p.estado === "Pendiente de aprobación" || p.estado === "En cotización"
-          ? { ...p, estado: "Aprobado", notificacionLeida: true }
-          : p
-      )
-    );
-    setMensajeFeedback(
-      `✓ Se autorizaron y aprobaron ${pendientes.length} solicitudes de compra pendientes.`
-    );
+    try {
+      setError("");
+      const actualizados = await aprobarTodosPendientesGerencia();
+      setPedidos(actualizados);
+      setMensajeFeedback(
+        `✓ Se autorizaron y aprobaron ${pendientes.length} solicitudes de compra pendientes.`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudieron aprobar las compras pendientes."
+      );
+    }
   };
 
-  const handleMarcarLeida = (id: string) => {
-    setPedidos((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, notificacionLeida: true } : p))
-    );
+  const handleMarcarLeida = async (pedido: PedidoCompraAPI) => {
+    try {
+      setProcesandoId(pedido.id);
+      setError("");
+      const actualizado = await marcarNotificacionPedidoLeida(pedido.id, true);
+      setPedidos((prev) =>
+        prev.map((p) => (p.id === actualizado.id ? actualizado : p))
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudo marcar la notificación."
+      );
+    } finally {
+      setProcesandoId(null);
+    }
   };
 
-  const handleMarcarTodasLeidas = () => {
-    setPedidos((prev) =>
-      prev.map((p) => ({ ...p, notificacionLeida: true }))
-    );
-    setMensajeFeedback("✓ Todas las notificaciones fueron marcadas como leídas.");
+  const handleMarcarTodasLeidas = async () => {
+    try {
+      setError("");
+      const actualizados = await marcarTodasNotificacionesPedidosLeidas();
+      setPedidos(actualizados);
+      setMensajeFeedback("✓ Todas las notificaciones fueron marcadas como leídas.");
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "No se pudieron marcar las notificaciones."
+      );
+    }
   };
 
-  const noLeidas = pedidos.filter((p) => !p.notificacionLeida).length;
+  const noLeidas = pedidos.filter((p) => !p.notificacion_leida).length;
   const totalPendientes = pedidos.filter(
-    (p) => p.estado === "Pendiente de aprobación"
+    (p) => p.estado === "Pendiente de aprobación" || p.estado === "En cotización"
   ).length;
   const totalAprobados = pedidos.filter((p) => p.estado === "Aprobado").length;
   const totalUrgentes = pedidos.filter(
@@ -82,7 +175,7 @@ export default function NotificacionesCompras({
 
   const montoTotalPendiente = pedidos
     .filter((p) => p.estado === "Pendiente de aprobación" || p.estado === "En cotización")
-    .reduce((acc, curr) => acc + curr.montoEstimado, 0);
+    .reduce((acc, curr) => acc + curr.monto_estimado, 0);
 
   const pedidosFiltrados = pedidos.filter((p) => {
     if (filtro === "pendientes") return p.estado === "Pendiente de aprobación" || p.estado === "En cotización";
@@ -117,7 +210,7 @@ export default function NotificacionesCompras({
               <button
                 type="button"
                 className="btn-nueva-incidencia"
-                onClick={handleAprobarTodasPendientes}
+                onClick={() => void handleAprobarTodasPendientes()}
                 style={{ background: "#16a34a" }}
               >
                 ✓ Aprobar pendientes (${montoTotalPendiente.toLocaleString("es-AR")})
@@ -127,7 +220,7 @@ export default function NotificacionesCompras({
               <button
                 type="button"
                 className="btn-nueva-incidencia"
-                onClick={handleMarcarTodasLeidas}
+                onClick={() => void handleMarcarTodasLeidas()}
               >
                 ✓ Marcar leídas ({noLeidas})
               </button>
@@ -138,6 +231,12 @@ export default function NotificacionesCompras({
         {mensajeFeedback && (
           <div className="feedback-banner feedback-banner-success" role="status">
             <span>✓</span> {mensajeFeedback}
+          </div>
+        )}
+
+        {error && (
+          <div className="alerta-error" role="alert">
+            ⚠️ {error}
           </div>
         )}
 
@@ -200,176 +299,194 @@ export default function NotificacionesCompras({
           </button>
         </div>
 
-        <div className="pedidos-lista">
-          {pedidosFiltrados.length === 0 ? (
-            <p className="no-items-msg">No hay órdenes en esta categoría.</p>
-          ) : (
-            pedidosFiltrados.map((pedido) => (
-              <div
-                key={pedido.id}
-                className={`pedido-card ${
-                  !pedido.notificacionLeida ? "notificacion-no-leida" : ""
-                }`}
-              >
-                <div className="pedido-header">
-                  <div>
-                    <span className="pedido-id">{pedido.id}</span>
-                    {!pedido.notificacionLeida && (
-                      <span className="notificacion-punto-nuevo">NUEVO</span>
-                    )}
-                    <span className="pedido-sku">{pedido.codigo}</span>
-                  </div>
-                  <div className="pedido-badges">
-                    <span
-                      className={`badge-prioridad ${
-                        pedido.prioridad === "Urgente"
-                          ? "badge-urgente"
-                          : pedido.prioridad === "Media"
-                          ? "badge-media"
-                          : "badge-baja"
-                      }`}
-                    >
-                      {pedido.prioridad}
-                    </span>
-                    <span
-                      className={`badge-estado-pedido ${
-                        pedido.estado === "Aprobado"
-                          ? "badge-aprobado"
-                          : pedido.estado === "Pendiente de aprobación"
-                          ? "badge-pendiente"
-                          : pedido.estado === "Rechazado"
-                          ? "badge-rechazado"
-                          : "badge-cotizacion"
-                      }`}
-                    >
-                      {pedido.estado}
-                    </span>
-                  </div>
-                </div>
-
-                <h3 className="pedido-titulo">
-                  Solicitud de reposición: {pedido.repuestoNombre}
-                </h3>
-
-                <p className="pedido-justificacion">
-                  <strong>Motivo / Justificación:</strong> {pedido.justificacion}
-                </p>
-
-                <div className="pedido-detalles-grid">
-                  <div>
-                    <span className="detalle-rotulo">Cantidad solicitada:</span>
-                    <span className="detalle-valor">
-                      {pedido.cantidad} {pedido.unidad}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="detalle-rotulo">Impacto presupuestario:</span>
-                    <span className="detalle-valor text-blue">
-                      ${pedido.montoEstimado.toLocaleString("es-AR")}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="detalle-rotulo">Solicitante:</span>
-                    <span className="detalle-valor">{pedido.solicitante}</span>
-                  </div>
-                  <div>
-                    <span className="detalle-rotulo">Proveedor sugerido:</span>
-                    <span className="detalle-valor">{pedido.proveedor}</span>
-                  </div>
-                  <div>
-                    <span className="detalle-rotulo">Fecha de emisión:</span>
-                    <span className="detalle-valor">{pedido.fecha}</span>
-                  </div>
-                </div>
-
-                <div className="pedido-acciones">
-                  {pedido.estado === "Pendiente de aprobación" && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-accion btn-aprobar"
-                        onClick={() => handleAprobarCompra(pedido.id)}
-                      >
-                        ✓ Aprobar Compra
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-accion btn-rechazar"
-                        onClick={() => handleRechazarCompra(pedido.id)}
-                      >
-                        ✕ Rechazar
-                      </button>
-                      {!pedido.notificacionLeida && (
-                        <button
-                          type="button"
-                          className="btn-accion btn-cotizar"
-                          onClick={() => handleMarcarLeida(pedido.id)}
+        {cargando ? (
+          <p className="no-items-msg">Cargando solicitudes de compra...</p>
+        ) : (
+          <div className="pedidos-lista">
+            {pedidosFiltrados.length === 0 ? (
+              <p className="no-items-msg">No hay órdenes en esta categoría.</p>
+            ) : (
+              pedidosFiltrados.map((pedido) => {
+                const procesando = procesandoId === pedido.id;
+                return (
+                  <div
+                    key={pedido.id}
+                    className={`pedido-card ${
+                      !pedido.notificacion_leida ? "notificacion-no-leida" : ""
+                    }`}
+                  >
+                    <div className="pedido-header">
+                      <div>
+                        <span className="pedido-id">{pedido.codigo_pedido}</span>
+                        {!pedido.notificacion_leida && (
+                          <span className="notificacion-punto-nuevo">NUEVO</span>
+                        )}
+                        <span className="pedido-sku">{pedido.codigo}</span>
+                      </div>
+                      <div className="pedido-badges">
+                        <span
+                          className={`badge-prioridad ${
+                            pedido.prioridad === "Urgente"
+                              ? "badge-urgente"
+                              : pedido.prioridad === "Media"
+                              ? "badge-media"
+                              : "badge-baja"
+                          }`}
                         >
-                          Marcar como leída
-                        </button>
+                          {pedido.prioridad}
+                        </span>
+                        <span
+                          className={`badge-estado-pedido ${
+                            pedido.estado === "Aprobado"
+                              ? "badge-aprobado"
+                              : pedido.estado === "Pendiente de aprobación"
+                              ? "badge-pendiente"
+                              : pedido.estado === "Rechazado"
+                              ? "badge-rechazado"
+                              : "badge-cotizacion"
+                          }`}
+                        >
+                          {pedido.estado}
+                        </span>
+                      </div>
+                    </div>
+
+                    <h3 className="pedido-titulo">
+                      Solicitud de reposición: {pedido.repuesto_nombre}
+                    </h3>
+
+                    <p className="pedido-justificacion">
+                      <strong>Motivo / Justificación:</strong> {pedido.justificacion}
+                    </p>
+
+                    <div className="pedido-detalles-grid">
+                      <div>
+                        <span className="detalle-rotulo">Cantidad solicitada:</span>
+                        <span className="detalle-valor">
+                          {pedido.cantidad} {pedido.unidad}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="detalle-rotulo">Impacto presupuestario:</span>
+                        <span className="detalle-valor text-blue">
+                          ${pedido.monto_estimado.toLocaleString("es-AR")}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="detalle-rotulo">Solicitante:</span>
+                        <span className="detalle-valor">{pedido.solicitante}</span>
+                      </div>
+                      <div>
+                        <span className="detalle-rotulo">Proveedor sugerido:</span>
+                        <span className="detalle-valor">
+                          {pedido.proveedor || "Sin definir"}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="detalle-rotulo">Fecha de emisión:</span>
+                        <span className="detalle-valor">
+                          {formatearFecha(pedido.fecha)}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="pedido-acciones">
+                      {pedido.estado === "Pendiente de aprobación" && (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-accion btn-aprobar"
+                            disabled={procesando}
+                            onClick={() => void handleAprobarCompra(pedido)}
+                          >
+                            ✓ Aprobar Compra
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-accion btn-rechazar"
+                            disabled={procesando}
+                            onClick={() => void handleRechazarCompra(pedido)}
+                          >
+                            ✕ Rechazar
+                          </button>
+                          {!pedido.notificacion_leida && (
+                            <button
+                              type="button"
+                              className="btn-accion btn-cotizar"
+                              disabled={procesando}
+                              onClick={() => void handleMarcarLeida(pedido)}
+                            >
+                              Marcar como leída
+                            </button>
+                          )}
+                        </>
                       )}
-                    </>
-                  )}
 
-                  {pedido.estado === "En cotización" && (
-                    <>
-                      <button
-                        type="button"
-                        className="btn-accion btn-aprobar"
-                        onClick={() => handleAprobarCompra(pedido.id)}
-                      >
-                        ✓ Autorizar Cotización
-                      </button>
-                      <button
-                        type="button"
-                        className="btn-accion btn-rechazar"
-                        onClick={() => handleRechazarCompra(pedido.id)}
-                      >
-                        ✕ Cancelar
-                      </button>
-                    </>
-                  )}
+                      {pedido.estado === "En cotización" && (
+                        <>
+                          <button
+                            type="button"
+                            className="btn-accion btn-aprobar"
+                            disabled={procesando}
+                            onClick={() => void handleAprobarCompra(pedido)}
+                          >
+                            ✓ Autorizar Cotización
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-accion btn-rechazar"
+                            disabled={procesando}
+                            onClick={() => void handleRechazarCompra(pedido)}
+                          >
+                            ✕ Cancelar
+                          </button>
+                        </>
+                      )}
 
-                  {pedido.estado === "Aprobado" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", justifyContent: "space-between" }}>
-                      <span className="estado-finalizado-label" style={{ color: "#16a34a", fontWeight: 700 }}>
-                        ✓ Compra aprobada por Gerencia (Lista para emitir orden)
-                      </span>
-                      <button
-                        type="button"
-                        className="btn-accion btn-rechazar"
-                        onClick={() => handleRechazarCompra(pedido.id)}
-                      >
-                        Revocar
-                      </button>
+                      {pedido.estado === "Aprobado" && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", justifyContent: "space-between" }}>
+                          <span className="estado-finalizado-label" style={{ color: "#16a34a", fontWeight: 700 }}>
+                            ✓ Compra aprobada por Gerencia (Lista para emitir orden)
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-accion btn-rechazar"
+                            disabled={procesando}
+                            onClick={() => void handleRechazarCompra(pedido)}
+                          >
+                            Revocar
+                          </button>
+                        </div>
+                      )}
+
+                      {pedido.estado === "Rechazado" && (
+                        <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", justifyContent: "space-between" }}>
+                          <span className="estado-finalizado-label" style={{ color: "#dc2626" }}>
+                            ✕ Solicitud rechazada por Gerencia
+                          </span>
+                          <button
+                            type="button"
+                            className="btn-accion btn-aprobar"
+                            disabled={procesando}
+                            onClick={() => void handleAprobarCompra(pedido)}
+                          >
+                            Reconsiderar y Aprobar
+                          </button>
+                        </div>
+                      )}
+
+                      {pedido.estado === "Recibido" && (
+                        <span className="estado-finalizado-label">
+                          ✓ Mercadería ingresada al depósito
+                        </span>
+                      )}
                     </div>
-                  )}
-
-                  {pedido.estado === "Rechazado" && (
-                    <div style={{ display: "flex", alignItems: "center", gap: "10px", width: "100%", justifyContent: "space-between" }}>
-                      <span className="estado-finalizado-label" style={{ color: "#dc2626" }}>
-                        ✕ Solicitud rechazada por Gerencia
-                      </span>
-                      <button
-                        type="button"
-                        className="btn-accion btn-aprobar"
-                        onClick={() => handleAprobarCompra(pedido.id)}
-                      >
-                        Reconsiderar y Aprobar
-                      </button>
-                    </div>
-                  )}
-
-                  {pedido.estado === "Recibido" && (
-                    <span className="estado-finalizado-label">
-                      ✓ Mercadería ingresada al depósito
-                    </span>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

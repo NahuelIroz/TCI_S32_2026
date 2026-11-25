@@ -92,6 +92,34 @@ def create_db_and_tables() -> None:
                     "VARCHAR(100) DEFAULT 'Sin asignar';"
                 )
             )
+            conn.execute(
+                text(
+                    "ALTER TABLE maquinas "
+                    "ADD COLUMN IF NOT EXISTS activo "
+                    "BOOLEAN DEFAULT TRUE;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE usuarios "
+                    "ADD COLUMN IF NOT EXISTS activo "
+                    "BOOLEAN DEFAULT TRUE;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE repuestos "
+                    "ADD COLUMN IF NOT EXISTS activo "
+                    "BOOLEAN DEFAULT TRUE;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE repuestos "
+                    "ADD COLUMN IF NOT EXISTS ubicacion "
+                    "VARCHAR(200) DEFAULT 'Sin ubicación';"
+                )
+            )
     except Exception as e:
         print(f"Nota de migración tablas: {e}")
 

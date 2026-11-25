@@ -1,5 +1,8 @@
-import { useState } from "react";
-import { maquinasPlanta, type MaquinaPlanta } from "../data/maquinas";
+import { useState, useEffect } from "react";
+import {
+  listarMaquinasActivas,
+  type MaquinaGestion,
+} from "../services/maquinasService";
 import "./styles.css";
 
 interface EstadoMaquinasProps {
@@ -11,12 +14,48 @@ export default function EstadoMaquinas({
   onBack,
   onNuevaMaquina,
 }: EstadoMaquinasProps) {
+  const [maquinas, setMaquinas] = useState<MaquinaGestion[]>([]);
+  const [cargando, setCargando] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<string>("todas");
   const [sectorFiltro, setSectorFiltro] = useState<string>("todos");
 
-  const sectores = Array.from(new Set(maquinasPlanta.map((m) => m.sector)));
+  useEffect(() => {
+    let montado = true;
 
-  const maquinasFiltradas = maquinasPlanta.filter((m) => {
+    async function cargar() {
+      try {
+        setCargando(true);
+        setError(null);
+        const data = await listarMaquinasActivas();
+        if (montado) {
+          setMaquinas(data);
+        }
+      } catch (err) {
+        if (montado) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "No se pudo consultar el parque de máquinas"
+          );
+        }
+      } finally {
+        if (montado) {
+          setCargando(false);
+        }
+      }
+    }
+
+    void cargar();
+
+    return () => {
+      montado = false;
+    };
+  }, []);
+
+  const sectores = Array.from(new Set(maquinas.map((m) => m.sector)));
+
+  const maquinasFiltradas = maquinas.filter((m) => {
     const cumpleEstado =
       filtroEstado === "todas" ||
       m.estado.toLowerCase() === filtroEstado.toLowerCase();
@@ -25,34 +64,22 @@ export default function EstadoMaquinas({
     return cumpleEstado && cumpleSector;
   });
 
-  const getStatusClass = (estado: MaquinaPlanta["estado"]) => {
-    switch (estado) {
-      case "Operativa":
-        return "chip-operativa";
-      case "Alerta":
-        return "chip-alerta";
-      case "En Mantenimiento":
-        return "chip-mantenimiento";
-      case "Detenida":
-        return "chip-detenida";
-      default:
-        return "";
-    }
+  const getStatusClass = (estado: string) => {
+    const norm = estado.toLowerCase();
+    if (norm.includes("operativa")) return "chip-operativa";
+    if (norm.includes("alerta")) return "chip-alerta";
+    if (norm.includes("mantenimiento")) return "chip-mantenimiento";
+    if (norm.includes("detenida")) return "chip-detenida";
+    return "";
   };
 
-  const getPuntoClass = (estado: MaquinaPlanta["estado"]) => {
-    switch (estado) {
-      case "Operativa":
-        return "punto-verde";
-      case "Alerta":
-        return "punto-amarillo";
-      case "En Mantenimiento":
-        return "punto-azul";
-      case "Detenida":
-        return "punto-rojo";
-      default:
-        return "";
-    }
+  const getPuntoClass = (estado: string) => {
+    const norm = estado.toLowerCase();
+    if (norm.includes("operativa")) return "punto-verde";
+    if (norm.includes("alerta")) return "punto-amarillo";
+    if (norm.includes("mantenimiento")) return "punto-azul";
+    if (norm.includes("detenida")) return "punto-rojo";
+    return "";
   };
 
   return (
@@ -87,7 +114,12 @@ export default function EstadoMaquinas({
           )}
         </div>
 
-        {/* Filtros */}
+        {error && (
+          <div className="alerta-error" role="alert">
+            ⚠️ {error}
+          </div>
+        )}
+
         <div className="maquinas-filtros-bar">
           <div className="filtro-tabs">
             <button
@@ -95,7 +127,7 @@ export default function EstadoMaquinas({
               className={`filtro-tab ${filtroEstado === "todas" ? "active" : ""}`}
               onClick={() => setFiltroEstado("todas")}
             >
-              Todas ({maquinasPlanta.length})
+              Todas ({maquinas.length})
             </button>
             <button
               type="button"
@@ -152,67 +184,73 @@ export default function EstadoMaquinas({
           </div>
         </div>
 
-        <div className="maquinas-grid-cards">
-          {maquinasFiltradas.map((maq) => (
-            <div key={maq.id} className="maquina-card">
-              <div className="maquina-card-top">
-                <div>
-                  <span className="maquina-codigo">{maq.codigo}</span>
-                  <span className="maquina-sector">{maq.sector}</span>
+        {cargando ? (
+          <p className="no-items-msg">Cargando parque de maquinaria...</p>
+        ) : (
+          <div className="maquinas-grid-cards">
+            {maquinasFiltradas.map((maq) => (
+              <div key={maq.id} className="maquina-card">
+                <div className="maquina-card-top">
+                  <div>
+                    <span className="maquina-codigo">{maq.codigo}</span>
+                    <span className="maquina-sector">{maq.sector}</span>
+                  </div>
+                  <div className={`resumen-chip ${getStatusClass(maq.estado)}`}>
+                    <span className={`chip-punto ${getPuntoClass(maq.estado)}`} />
+                    <span>{maq.estado}</span>
+                  </div>
                 </div>
-                <div className={`resumen-chip ${getStatusClass(maq.estado)}`}>
-                  <span className={`chip-punto ${getPuntoClass(maq.estado)}`} />
-                  <span>{maq.estado}</span>
+
+                <h3 className="maquina-nombre">{maq.nombre}</h3>
+
+                <div className="maquina-telemetria-grid">
+                  <div className="telemetria-item">
+                    <span className="telemetria-label">OEE</span>
+                    <strong
+                      className={`telemetria-valor ${
+                        maq.oee >= 85
+                          ? "text-green"
+                          : maq.oee >= 65
+                          ? "text-amber"
+                          : "text-red"
+                      }`}
+                    >
+                      {maq.oee > 0 ? `${maq.oee}%` : "0% (Parada)"}
+                    </strong>
+                  </div>
+
+                  <div className="telemetria-item">
+                    <span className="telemetria-label">Temperatura</span>
+                    <strong className="telemetria-valor">{maq.temperatura}</strong>
+                  </div>
+
+                  <div className="telemetria-item">
+                    <span className="telemetria-label">Presión</span>
+                    <strong className="telemetria-valor">{maq.presion}</strong>
+                  </div>
+
+                  <div className="telemetria-item">
+                    <span className="telemetria-label">Horas Op.</span>
+                    <strong className="telemetria-valor">
+                      {maq.horas_operacion} h
+                    </strong>
+                  </div>
+                </div>
+
+                <div className="maquina-footer-meta">
+                  <span>
+                    <strong>Responsable:</strong> {maq.responsable}
+                  </span>
+                  <span>
+                    <strong>Próximo service:</strong>{" "}
+                    {maq.proximo_mantenimiento || "Sin programar"}
+                  </span>
                 </div>
               </div>
-
-              <h3 className="maquina-nombre">{maq.nombre}</h3>
-
-              <div className="maquina-telemetria-grid">
-                <div className="telemetria-item">
-                  <span className="telemetria-label">OEE</span>
-                  <strong
-                    className={`telemetria-valor ${
-                      maq.oee >= 85
-                        ? "text-green"
-                        : maq.oee >= 65
-                        ? "text-amber"
-                        : "text-red"
-                    }`}
-                  >
-                    {maq.oee > 0 ? `${maq.oee}%` : "0% (Parada)"}
-                  </strong>
-                </div>
-
-                <div className="telemetria-item">
-                  <span className="telemetria-label">Temperatura</span>
-                  <strong className="telemetria-valor">{maq.temperatura}</strong>
-                </div>
-
-                <div className="telemetria-item">
-                  <span className="telemetria-label">Presión</span>
-                  <strong className="telemetria-valor">{maq.presion}</strong>
-                </div>
-
-                <div className="telemetria-item">
-                  <span className="telemetria-label">Horas Op.</span>
-                  <strong className="telemetria-valor">{maq.horasOperacion} h</strong>
-                </div>
-              </div>
-
-              <div className="maquina-footer-meta">
-                <span>
-                  <strong>Responsable:</strong> {maq.responsable}
-                </span>
-                <span>
-                  <strong>Próximo service:</strong> {maq.proximoMantenimiento}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 }
-

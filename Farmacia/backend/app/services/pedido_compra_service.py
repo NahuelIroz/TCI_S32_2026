@@ -1,8 +1,7 @@
-
 from datetime import datetime
 
 from fastapi import HTTPException
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.models.repuesto import Repuesto
 from app.models.pedido_compra import (
@@ -11,6 +10,7 @@ from app.models.pedido_compra import (
     PedidoCompraRead,
     PedidoCompraEstadoUpdate,
     EstadoPedido,
+    PrioridadPedido,
     PedidoCompraCotizacionUpdate,
 )
 from app.repositories.pedido_compra_repository import (
@@ -180,8 +180,6 @@ class PedidoCompraService:
                 )
             )
 
-
-        # No permitir aprobar compras sin cotización válida.
         if datos.estado == EstadoPedido.APROBADO:
             if (
                 not pedido.proveedor.strip()
@@ -196,7 +194,6 @@ class PedidoCompraService:
                     )
                 )
 
-
         pedido.estado = datos.estado
 
         try:
@@ -210,7 +207,6 @@ class PedidoCompraService:
 
         return self.convertir_a_read(session, pedido)
 
-    
     def actualizar_cotizacion(
         self,
         session: Session,
@@ -252,3 +248,181 @@ class PedidoCompraService:
 
         return self.convertir_a_read(session, pedido)
 
+    def decision_gerencia(
+        self,
+        session: Session,
+        pedido_id: int,
+        nuevo_estado: EstadoPedido,
+    ) -> PedidoCompraRead:
+        pedido = self.repository.obtener_por_id(session, pedido_id)
+
+        if pedido is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Pedido de compra no encontrado",
+            )
+
+        if pedido.estado == EstadoPedido.RECIBIDO:
+            raise HTTPException(
+                status_code=409,
+                detail="El pedido ya fue recibido en depósito y no puede modificarse",
+            )
+
+        if nuevo_estado not in (EstadoPedido.APROBADO, EstadoPedido.RECHAZADO):
+            raise HTTPException(
+                status_code=422,
+                detail="La decisión de Gerencia debe ser 'Aprobado' o 'Rechazado'",
+            )
+
+        pedido.estado = nuevo_estado
+        pedido.notificacion_leida = True
+
+        try:
+            self.repository.actualizar(session, pedido)
+            session.commit()
+            session.refresh(pedido)
+        except Exception:
+            session.rollback()
+            raise
+
+        return self.convertir_a_read(session, pedido)
+
+    def aprobar_todos_pendientes(
+        self,
+        session: Session,
+    ) -> list[PedidoCompraRead]:
+        pendientes = self.repository.listar_por_estados(
+            session,
+            [EstadoPedido.PENDIENTE, EstadoPedido.COTIZACION],
+        )
+
+        try:
+            for pedido in pendientes:
+                pedido.estado = EstadoPedido.APROBADO
+                pedido.notificacion_leida = True
+                self.repository.actualizar(session, pedido)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+
+        return self.listar(session)
+
+    def marcar_notificacion_leida(
+        self,
+        session: Session,
+        pedido_id: int,
+        leida: bool = True,
+    ) -> PedidoCompraRead:
+        pedido = self.repository.obtener_por_id(session, pedido_id)
+
+        if pedido is None:
+            raise HTTPException(
+                status_code=404,
+                detail="Pedido de compra no encontrado",
+            )
+
+        pedido.notificacion_leida = leida
+
+        try:
+            self.repository.actualizar(session, pedido)
+            session.commit()
+            session.refresh(pedido)
+        except Exception:
+            session.rollback()
+            raise
+
+        return self.convertir_a_read(session, pedido)
+
+    def marcar_todas_notificaciones_leidas(
+        self,
+        session: Session,
+    ) -> list[PedidoCompraRead]:
+        no_leidos = self.repository.listar_no_leidos(session)
+
+        try:
+            for pedido in no_leidos:
+                pedido.notificacion_leida = True
+                self.repository.actualizar(session, pedido)
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+
+        return self.listar(session)
+
+
+PEDIDOS_SEMILLA = [
+    {
+        "repuesto_codigo": "SKU-COR-900",
+        "cantidad": 5,
+        "prioridad": PrioridadPedido.URGENTE,
+        "justificacion": "Stock agotado (0 unid.), requerida para compresores principales.",
+        "estado": EstadoPedido.PENDIENTE,
+        "solicitante": "Carlos Gómez (Mantenimiento)",
+        "monto_estimado": 45000.0,
+        "proveedor": "Transmisiones Industriales S.A.",
+        "notificacion_leida": False,
+    },
+    {
+        "repuesto_codigo": "SKU-VLV-420",
+        "cantidad": 10,
+        "prioridad": PrioridadPedido.MEDIA,
+        "justificacion": "Stock crítico (2 unid. restantes sobre mínimo de 5).",
+        "estado": EstadoPedido.COTIZACION,
+        "solicitante": "Carlos Gómez (Mantenimiento)",
+        "monto_estimado": 185000.0,
+        "proveedor": "Festo Neumática Argentina",
+        "notificacion_leida": False,
+    },
+    {
+        "repuesto_codigo": "SKU-6204-2R",
+        "cantidad": 20,
+        "prioridad": PrioridadPedido.MEDIA,
+        "justificacion": "Reposición periódica para mantenimiento preventivo anual.",
+        "estado": EstadoPedido.APROBADO,
+        "solicitante": "Ing. Martín Bianchi (Encargado)",
+        "monto_estimado": 120000.0,
+        "proveedor": "Rodamientos del Plata SRL",
+        "notificacion_leida": True,
+    },
+    {
+        "repuesto_codigo": "SKU-FLT-880",
+        "cantidad": 8,
+        "prioridad": PrioridadPedido.BAJA,
+        "justificacion": "Reposición de stock para segundo semestre.",
+        "estado": EstadoPedido.RECIBIDO,
+        "solicitante": "Ing. Martín Bianchi (Encargado)",
+        "monto_estimado": 96000.0,
+        "proveedor": "Aire Comprimido Tech",
+        "notificacion_leida": True,
+    },
+]
+
+
+def seed_pedidos_compra_si_no_existen(session: Session) -> None:
+    existente = session.exec(select(PedidoCompra)).first()
+    if existente is not None:
+        return
+
+    for datos in PEDIDOS_SEMILLA:
+        repuesto = session.exec(
+            select(Repuesto).where(Repuesto.codigo == datos["repuesto_codigo"])
+        ).first()
+        if repuesto is None or repuesto.id is None:
+            continue
+
+        nuevo = PedidoCompra(
+            repuesto_id=repuesto.id,
+            cantidad=datos["cantidad"],
+            prioridad=datos["prioridad"],
+            justificacion=datos["justificacion"],
+            estado=datos["estado"],
+            solicitante=datos["solicitante"],
+            monto_estimado=datos["monto_estimado"],
+            proveedor=datos["proveedor"],
+            notificacion_leida=datos["notificacion_leida"],
+        )
+        session.add(nuevo)
+
+    session.commit()

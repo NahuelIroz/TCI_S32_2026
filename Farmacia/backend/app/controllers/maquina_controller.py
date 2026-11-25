@@ -1,8 +1,8 @@
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_maquina_service
 from app.models.maquina import (
+    MaquinaAltaBOMRead,
     MaquinaRead,
     MaquinaCreate,
     MaquinaUpdate,
@@ -20,9 +20,15 @@ router = APIRouter(
 @router.get("", response_model=list[MaquinaRead])
 def listar_maquinas(
     incluir_inactivas: bool = False,
+    estado: str | None = None,
+    sector: str | None = None,
     service: MaquinaService = Depends(get_maquina_service),
 ):
-    return service.listar(incluir_inactivas)
+    return service.listar(
+        incluir_inactivas=incluir_inactivas,
+        estado=estado,
+        sector=sector,
+    )
 
 
 @router.get("/{maquina_id}", response_model=MaquinaRead)
@@ -49,6 +55,18 @@ def crear_maquina(
     service: MaquinaService = Depends(get_maquina_service),
 ):
     return service.crear(datos)
+
+
+@router.post(
+    "/alta-bom",
+    response_model=MaquinaAltaBOMRead,
+    status_code=status.HTTP_201_CREATED
+)
+def crear_maquina_con_bom(
+    datos: MaquinaCreate,
+    service: MaquinaService = Depends(get_maquina_service),
+):
+    return service.crear_con_bom(datos)
 
 
 @router.patch("/{maquina_id}", response_model=MaquinaRead)
@@ -79,4 +97,3 @@ def cambiar_activo_maquina(
             status_code=404,
             detail=str(error),
         ) from error
-

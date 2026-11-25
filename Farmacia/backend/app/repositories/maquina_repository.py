@@ -11,13 +11,21 @@ class MaquinaRepository:
 
     def listar(
         self,
-        incluir_inactivas: bool = False
+        incluir_inactivas: bool = False,
+        estado: str | None = None,
+        sector: str | None = None,
     ) -> list[Maquina]:
 
         statement = select(Maquina)
 
         if not incluir_inactivas:
             statement = statement.where(Maquina.activo == True)
+
+        if estado:
+            statement = statement.where(Maquina.estado.ilike(estado.strip()))
+
+        if sector:
+            statement = statement.where(Maquina.sector.ilike(sector.strip()))
 
         statement = statement.order_by(Maquina.nombre)
 
