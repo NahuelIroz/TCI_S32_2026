@@ -30,7 +30,7 @@ import {
   PERFILES,
   getAccionesParaRol,
   type PerfilUsuario,
-  type TipoIconoAccion,
+  tienePermiso,
 } from "../auth/permisos";
 
 type Pantalla =
@@ -65,250 +65,8 @@ interface HomeProps {
   onCerrarSesion?: () => void;
 }
 
-function ActionSymbol({ name }: { name: TipoIconoAccion }) {
-  if (name === "stock-in") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3v12M8 11l4 4 4-4" />
-        <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
-      </svg>
-    );
-  }
-
-  if (name === "stock") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 3h10l4 4v14H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
-        <path d="M14 3v5h5M8 12h8M8 16h8" />
-      </svg>
-    );
-  }
-
-  if (name === "scan") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM14 8h2M14 11h3M8 14h3v3H8zM14 15v2" />
-      </svg>
-    );
-  }
-
-  if (name === "tools") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-      </svg>
-    );
-  }
-
-  if (name === "compras") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="9" cy="20" r="1" />
-        <circle cx="18" cy="20" r="1" />
-        <path d="M2 3h3l2.6 11.8a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
-      </svg>
-    );
-  }
-
-  if (name === "report") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m12 3 9 16H3L12 3Z" />
-        <path d="M12 9v4M12 16h.01" />
-      </svg>
-    );
-  }
-
-  if (name === "incidents") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M6 5h12a2 2 0 0 1 2 2v13H4V7a2 2 0 0 1 2-2Z" />
-        <path d="M9 5V3h6v2M8 10h8M8 14h8M8 18h5" />
-      </svg>
-    );
-  }
-
-  if (name === "tasks") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-        <rect x="9" y="3" width="6" height="4" rx="1" />
-        <path d="m9 14 2 2 4-4" />
-      </svg>
-    );
-  }
-
-  if (name === "shield-check") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <path d="m9 12 2 2 4-4" />
-      </svg>
-    );
-  }
-
-  if (name === "dashboard") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="3" y="3" width="7" height="9" rx="1" />
-        <rect x="14" y="3" width="7" height="5" rx="1" />
-        <rect x="14" y="12" width="7" height="9" rx="1" />
-        <rect x="3" y="16" width="7" height="5" rx="1" />
-      </svg>
-    );
-  }
-
-  if (name === "machine") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
-    );
-  }
-
-  if (name === "stats") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M3 3v18h18" />
-        <path d="m19 9-5 5-4-4-3 3" />
-      </svg>
-    );
-  }
-
-  if (name === "bell") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="9" cy="21" r="1" />
-      <circle cx="20" cy="21" r="1" />
-      <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-      <path d="m9 11 2 2 4-4" />
-    </svg>
-  );
-}
-
-function NavIcon({
-  name,
-}: {
-  name:
-  | "home"
-  | "scan"
-  | "stock"
-  | "tools"
-  | "compras"
-  | "report"
-  | "incidents"
-  | "tasks"
-  | "dashboard"
-  | "machine"
-  | "bell";
-}) {
-  if (name === "home") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m3 11 9-8 9 8M5 10v10h5v-6h4v6h5V10" />
-      </svg>
-    );
-  }
-
-  if (name === "scan") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M8 8h3v3H8zM14 8h2M14 11h3M8 14h3v3H8zM14 15v2" />
-      </svg>
-    );
-  }
-
-  if (name === "stock") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M5 3h10l4 4v14H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" />
-        <path d="M14 3v5h5M8 12h8M8 16h8" />
-      </svg>
-    );
-  }
-
-  if (name === "tools") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
-      </svg>
-    );
-  }
-
-  if (name === "compras") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="9" cy="20" r="1" />
-        <circle cx="18" cy="20" r="1" />
-        <path d="M2 3h3l2.6 11.8a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 6H6" />
-      </svg>
-    );
-  }
-
-  if (name === "report") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="m12 3 9 16H3L12 3Z" />
-        <path d="M12 9v4M12 16h.01" />
-      </svg>
-    );
-  }
-
-  if (name === "tasks") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-        <rect x="9" y="3" width="6" height="4" rx="1" />
-        <path d="m9 14 2 2 4-4" />
-      </svg>
-    );
-  }
-
-  if (name === "dashboard") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="3" y="3" width="7" height="9" rx="1" />
-        <rect x="14" y="3" width="7" height="5" rx="1" />
-        <rect x="14" y="12" width="7" height="9" rx="1" />
-        <rect x="3" y="16" width="7" height="5" rx="1" />
-      </svg>
-    );
-  }
-
-  if (name === "machine") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-      </svg>
-    );
-  }
-
-  if (name === "bell") {
-    return (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
-        <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
-    );
-  }
-
-  return (
-    <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M6 5h12a2 2 0 0 1 2 2v13H4V7a2 2 0 0 1 2-2Z" />
-      <path d="M9 5V3h6v2M8 10h8M8 14h8M8 18h5" />
-    </svg>
-  );
-}
+import Navbar from "../components/Navbar/Navbar";
+import ActionSymbol from "../components/icons/ActionIcon";
 
 export default function Home({
   usuario = PERFILES.mantenimiento,
@@ -320,7 +78,7 @@ export default function Home({
   const [repuestoSeleccionadoCodigo, setRepuestoSeleccionadoCodigo] = useState<string>("SKU-6204-2R");
   const [repuestoParaCompra, setRepuestoParaCompra] = useState<Repuesto | undefined>(undefined);
 
-  const acciones = getAccionesParaRol(usuario.rol);
+  const acciones = getAccionesParaRol(usuario.rol).filter(a => tienePermiso(usuario.rol, a.permiso));
 
   const abrirReporte = () => {
     setPantallaAnterior(pantalla);
@@ -335,6 +93,12 @@ export default function Home({
 
   const ejecutarAccionPorId = (accionId: string) => {
     switch (accionId) {
+      case "trazabilidad":
+        setPantalla("trazabilidad");
+        break;
+      case "alta-maquinaria":
+        setPantalla("altaMaquinaria");
+        break;
       case "reportar-incidencia":
         abrirReporte();
         break;
@@ -412,6 +176,7 @@ export default function Home({
     }
   };
 
+  const renderPantalla = () => {
   if (pantalla === "trazabilidad") {
     return (
       <TrazabilidadRepuesto
@@ -608,7 +373,6 @@ if (pantalla === "misIncidencias") {
 
 
   const esMantenimiento = usuario.rol === "MANTENIMIENTO";
-  const esOperario = usuario.rol === "OPERARIO";
   const esEncargado = usuario.rol === "ENCARGADO";
   const esGerencia = usuario.rol === "GERENCIA";
 
@@ -619,264 +383,7 @@ if (pantalla === "misIncidencias") {
     return "badge-operario";
   };
 
-  const getBrandTitle = () => {
-    if (esEncargado) return "ENCARGADO";
-    if (esGerencia) return "GERENCIA";
-    if (esOperario) return "OPERACIONES";
-    return "MANTENIMIENTO";
-  };
-
-  return (
-    <div className="pharma-app">
-      <header className="topbar">
-        <a
-          className="brand"
-          href="#inicio"
-          aria-label="Sistema de Gestión Pharma, inicio"
-          onClick={(e) => {
-            e.preventDefault();
-            setPantalla("home");
-          }}
-        >
-          <span className="brand-mark" aria-hidden="true">
-            +
-          </span>
-          <span>
-            <strong>{getBrandTitle()}</strong>
-          </span>
-        </a>
-
-
-        <nav className="desktop-nav" aria-label="Navegación principal">
-          <a
-            className="nav-link active" style={{ display: "none" }}
-            href="#inicio"
-            onClick={(e) => {
-              e.preventDefault();
-              setPantalla("home");
-            }}
-          >
-            Inicio
-          </a>
-
-          {esOperario && (
-            <>
-              <a
-                className="nav-link"
-                href="#reportar"
-                onClick={(event) => {
-                  event.preventDefault();
-                  abrirReporte();
-                }}
-              >
-                Reportar Incidencia
-              </a>
-              <a
-                className="nav-link"
-                href="#mis-incidencias"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("misIncidencias");
-                }}
-              >
-                Mis Incidencias
-              </a>
-              <a
-                className="nav-link"
-                href="#scanner"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("scan");
-                }}
-              >
-                Escanear QR
-              </a>
-            </>
-          )}
-
-          {false && esMantenimiento && (
-            <>
-              
-              
-              
-              <a
-                className="nav-link"
-                href="#compras"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setPantalla("pedidosCompra");
-                }}
-              >
-                </a>
-            </>
-          )}
-
-          {esEncargado && (
-            <>
-              <a
-                className="nav-link"
-                href="#compras"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("gestionarCompras");
-                }}
-              >
-                Gestionar Compras
-              </a>
-              <a
-                className="nav-link"
-                href="#stock-recibido"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("cargarStockRecibido");
-                }}
-              >
-                Stock Recibido
-              </a>
-              <a
-                className="nav-link"
-                href="#supervisar"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("supervisarTareas");
-                }}
-              >
-                Supervisar Tareas
-              </a>
-              
-              <a
-                className="nav-link"
-                href="#gestionar-repuestos"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("gestionarRepuestos");
-                }}
-              >
-                Gestionar Repuestos
-              </a>
-
-              <a
-                className="nav-link"
-                href="#gestionar-maquinas"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("gestionarMaquinas");
-                }}
-              >
-                Gestionar Máquinas
-              </a>
-
-              <a
-                className="nav-link"
-                href="#trazabilidad"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("trazabilidad");
-                }}
-              >
-                Trazabilidad
-              </a>
-              <a
-                className="nav-link"
-                href="#alta-maquina"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("altaMaquinaria");
-                }}
-              >
-                Nueva Máquina 
-              </a>
-            </>
-          )}
-
-          {false && esGerencia && (
-            <>
-              <a
-                className="nav-link"
-                href="#tableros"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("tablerosSeguimiento");
-                }}
-              >
-                Tableros
-              </a>
-              <a
-                className="nav-link"
-                href="#incidencias"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("visualizarIncidencias");
-                }}
-              >
-                Incidencias & Plan
-              </a>
-              <a
-                className="nav-link"
-                href="#maquinas"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("estadoMaquinas");
-                }}
-              >
-                Estado Máquinas
-              </a>
-              <a
-                className="nav-link"
-                href="#trazabilidad"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("trazabilidad");
-                }}
-              >
-                Trazabilidad (RN-06)
-              </a>
-              <a
-                className="nav-link"
-                href="#estadisticas"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("estadisticasHistoricos");
-                }}
-              >
-                Estadísticas
-              </a>
-              <a
-                className="nav-link"
-                href="#notificaciones"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setPantalla("notificacionesCompras");
-                }}
-              >
-                Aprobar Compras
-              </a>
-            </>
-          )}
-        </nav>
-
-        <div className="topbar-acciones-derecha">
-
-          <button
-            className="topbar-user"
-            type="button"
-            onClick={() => {
-              if (onCerrarSesion && confirm("¿Deseás cerrar la sesión actual?")) {
-                onCerrarSesion();
-              }
-            }}
-            aria-label={`Perfil de ${usuario.nombre}. Clic para cerrar sesión`}
-            title="Clic para cerrar sesión"
-          >
-            <span className="avatar avatar-small">{usuario.avatar}</span>
-            <span className="topbar-user-name">{usuario.nombre}</span>
-            <span className="chevron" aria-hidden="true">
-              ⌄
-            </span>
-          </button>
-        </div>
-      </header>
-
+    return (
       <main id="inicio" className="dashboard">
         <section className="welcome-card" aria-label="Perfil de usuario">
           <div className="welcome-user">
@@ -957,167 +464,13 @@ if (pantalla === "misIncidencias") {
         </footer>
       </main>
 
-      <nav className="mobile-nav" aria-label="Navegación inferior">
-        <a
-          className="mobile-nav-item selected"
-          href="#inicio"
-          onClick={(e) => {
-            e.preventDefault();
-            setPantalla("home");
-          }}
-        >
-          <NavIcon name="home" />
-          <span>Inicio</span>
-        </a>
+    );
+  };
 
-        {esOperario && (
-          <>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={abrirReporte}
-            >
-              <NavIcon name="report" />
-              <span>Reportar</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("misIncidencias")}
-            >
-              <NavIcon name="incidents" />
-              <span>Incidencias</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("scan")}
-            >
-              <NavIcon name="scan" />
-              <span>Escanear</span>
-            </button>
-          </>
-        )}
-
-        {esMantenimiento && (
-          <>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("stock")}
-            >
-              <NavIcon name="stock" />
-              <span>Stock</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("scan")}
-            >
-              <NavIcon name="scan" />
-              <span>Escanear</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("registrarUso")}
-            >
-              <NavIcon name="tools" />
-              <span>Uso</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("pedidosCompra")}
-            >
-              <NavIcon name="compras" />
-              <span>Compras</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("gestionarCompras")}
-            >
-              <NavIcon name="compras" />
-              <span>Cotizar</span>
-            </button>
-          </>
-        )}
-
-        {esEncargado && (
-          <>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("gestionarCompras")}
-            >
-              <NavIcon name="compras" />
-              <span>Compras</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("supervisarTareas")}
-            >
-              <NavIcon name="tasks" />
-              <span>Tareas</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("gestionarRepuestos")}
-            >
-              <NavIcon name="stock" />
-              <span>Repuestos</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("gestionarMaquinas")}
-            >
-              <NavIcon name="machine" />
-              <span>Máquinas</span>
-            </button>
-          </>
-        )}
-
-        {esGerencia && (
-          <>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("tablerosSeguimiento")}
-            >
-              <NavIcon name="dashboard" />
-              <span>Tableros</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("visualizarIncidencias")}
-            >
-              <NavIcon name="incidents" />
-              <span>Incidencias</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("estadoMaquinas")}
-            >
-              <NavIcon name="machine" />
-              <span>Máquinas</span>
-            </button>
-            <button
-              className="mobile-nav-item"
-              type="button"
-              onClick={() => setPantalla("notificacionesCompras")}
-            >
-              <NavIcon name="compras" />
-              <span>Compras</span>
-            </button>
-          </>
-        )}
-      </nav>
-    </div>
+  return (
+    <>
+      <Navbar usuario={usuario} pantallaActual={pantalla} onInicio={() => setPantalla("home")} onAccion={ejecutarAccionPorId} onCerrarSesion={onCerrarSesion} />
+      {pantalla === "home" ? <div className="pharma-app">{renderPantalla()}</div> : renderPantalla()}
+    </>
   );
 }

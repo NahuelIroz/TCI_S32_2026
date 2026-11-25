@@ -707,7 +707,7 @@
 
   .dashboard {
     width: min(100% - 32px, 480px);
-    padding: 24px 0 104px;
+    padding: 24px 0 28px;
   }
 
   .welcome-card {
