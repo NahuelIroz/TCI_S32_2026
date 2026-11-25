@@ -3069,3 +3069,153 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================
+   DISEÑO RESPONSIVE - TABLET Y ESCRITORIO
+   Conserva los estilos móviles existentes.
+========================================= */
+@media (min-width: 768px) {
+  .incidencia-container {
+    width: calc(100% - 48px);
+    max-width: 960px;
+    margin: 24px auto;
+    min-height: auto;
+    border-radius: 12px;
+  }
+
+  .incidencia-header {
+    padding: 0 24px;
+  }
+
+  .incidencia-form {
+    padding: 24px;
+  }
+
+  .incidencia-form.formulario-sub-limpio {
+    padding: 0;
+  }
+
+  .gestion-compras-body {
+    padding: 24px;
+  }
+
+  .incidencia-container .filtro-tabs,
+  .incidencia-container .mis-filtros,
+  .incidencia-container .reglas-acceso-rapido {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .gestion-compras-body .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    gap: 16px;
+  }
+
+  .gestion-compras-body .pedido-detalles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .incidencia-container .mis-listado,
+  .incidencia-container .stock-listado {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    align-items: start;
+  }
+
+  .incidencia-container .mis-vacio,
+  .incidencia-container .no-items-msg {
+    grid-column: 1 / -1;
+  }
+
+  .incidencia-container .stock-resumen {
+    gap: 16px;
+  }
+
+  .incidencia-container .stock-indicador {
+    padding: 16px;
+  }
+
+  .incidencia-container .form-row-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .incidencia-container .form-row-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .incidencia-container .form-group,
+  .incidencia-container .campo,
+  .incidencia-container .pedido-card,
+  .incidencia-container .maquina-card,
+  .incidencia-container .tarea-card,
+  .incidencia-container .timeline-contenido {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .incidencia-container .form-group input,
+  .incidencia-container .form-group select,
+  .incidencia-container .form-group textarea {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .incidencia-container .repuesto-acciones-botones {
+    flex-wrap: wrap;
+  }
+
+  .incidencia-container .maquinas-grid-cards {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+    gap: 16px;
+  }
+
+  .incidencia-container .tablero-bloque {
+    padding: 24px;
+  }
+
+  .incidencia-container .incidencia-form > .campo,
+  .incidencia-container .incidencia-form > .boton-enviar {
+    max-width: 900px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .incidencia-container {
+    width: calc(100% - 64px);
+    max-width: 1280px;
+    margin: 32px auto;
+  }
+
+  .incidencia-form,
+  .gestion-compras-body {
+    padding: 32px;
+  }
+
+  .incidencia-form.formulario-sub-limpio {
+    padding: 0;
+  }
+
+  .gestion-compras-body .pedidos-lista {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    align-items: start;
+  }
+
+  .gestion-compras-body .pedidos-lista > :not(.pedido-card):not(.tarea-card) {
+    grid-column: 1 / -1;
+  }
+
+  .gestion-compras-body .pedido-card,
+  .gestion-compras-body .tarea-card {
+    padding: 20px;
+  }
+
+  .incidencia-container .mis-listado,
+  .incidencia-container .stock-listado {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+}

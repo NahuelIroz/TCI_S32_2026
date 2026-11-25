@@ -64,6 +64,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     "incidencias.consultar",
     "maquinas.consultar",
     "estadisticas.consultar",
+    "compras.notificaciones",
   ],
 };
 
