@@ -80,6 +80,11 @@ class PedidoCompraEstadoUpdate(SQLModel):
     estado: EstadoPedido
 
 
+class PedidoCompraNotificacionUpdate(SQLModel):
+    notificacion_leida: bool = True
+
+
+
 class PedidoCompraRead(SQLModel):
     model_config = ConfigDict(from_attributes=True)
 

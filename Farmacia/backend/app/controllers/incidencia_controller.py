@@ -7,6 +7,7 @@ from app.dependencies import get_incidencia_service
 from app.models.incidencia import (
     IncidenciaCreate,
     IncidenciaRead,
+    IncidenciaDetalleRead,
     IncidenciaEstadoUpdate,
     EstadoIncidencia,
     Turno,
@@ -68,6 +69,21 @@ def listar_incidencias(
         maquina_id=maquina_id,
         turno=turno,
         usuario_id=usuario_id,
+    )
+
+
+@router.get(
+    "/detalles",
+    response_model=list[IncidenciaDetalleRead],
+)
+def listar_incidencias_detalladas(
+    estado: EstadoIncidencia | None = None,
+    maquina_id: int | None = None,
+    service: IncidenciaService = Depends(get_incidencia_service),
+):
+    return service.listar_detalladas(
+        estado=estado,
+        maquina_id=maquina_id,
     )
 
 

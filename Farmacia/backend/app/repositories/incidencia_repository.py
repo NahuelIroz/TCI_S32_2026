@@ -7,6 +7,7 @@ No contiene reglas de negocio ni lógica HTTP.
 
 from sqlmodel import Session, select
 
+from app.models.foto_incidencia import FotoIncidencia
 from app.models.incidencia import Incidencia, EstadoIncidencia, Turno
 from app.models.maquina import Maquina
 from app.models.usuario import Usuario
@@ -57,6 +58,39 @@ class IncidenciaRepository:
         )
 
         return list(self.session.exec(statement).all())
+
+    def listar_con_detalle(
+        self,
+        estado: EstadoIncidencia | None = None,
+        maquina_id: int | None = None,
+    ) -> list[tuple[Incidencia, Maquina | None, Usuario | None, int]]:
+        statement = (
+            select(Incidencia, Maquina, Usuario)
+            .join(Maquina, Incidencia.maquina_id == Maquina.id, isouter=True)
+            .join(Usuario, Incidencia.usuario_reportante_id == Usuario.id, isouter=True)
+        )
+
+        if estado is not None:
+            statement = statement.where(Incidencia.estado == estado)
+
+        if maquina_id is not None:
+            statement = statement.where(Incidencia.maquina_id == maquina_id)
+
+        statement = statement.order_by(Incidencia.fecha_reporte.desc())
+        filas = list(self.session.exec(statement).all())
+
+        resultado = []
+        for inc, maq, usu in filas:
+            fotos = list(
+                self.session.exec(
+                    select(FotoIncidencia).where(
+                        FotoIncidencia.incidencia_id == inc.id
+                    )
+                ).all()
+            ) if inc.id else []
+            resultado.append((inc, maq, usu, len(fotos)))
+
+        return resultado
 
 
     # -----------------------------------------

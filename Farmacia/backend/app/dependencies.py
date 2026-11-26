@@ -6,13 +6,17 @@ from sqlmodel import Session
 
 from app.database import get_session
 from app.models.usuario import RolUsuario, Usuario
+from app.repositories.estadistica_repository import EstadisticaRepository
 from app.repositories.incidencia_repository import IncidenciaRepository
 from app.repositories.maquina_repository import MaquinaRepository
 from app.repositories.tablero_repository import TableroRepository
+from app.repositories.tarea_repository import TareaRepository
 from app.services.auth_service import decodificar_token
+from app.services.estadistica_service import EstadisticaService
 from app.services.incidencia_service import IncidenciaService
 from app.services.maquina_service import MaquinaService
 from app.services.tablero_service import TableroService
+from app.services.tarea_service import TareaService
 
 
 def get_incidencia_repository(
@@ -49,6 +53,30 @@ def get_tablero_service(
     repository: TableroRepository = Depends(get_tablero_repository),
 ) -> TableroService:
     return TableroService(repository)
+
+
+def get_tarea_repository(
+    session: Session = Depends(get_session),
+) -> TareaRepository:
+    return TareaRepository(session)
+
+
+def get_tarea_service(
+    repository: TareaRepository = Depends(get_tarea_repository),
+) -> TareaService:
+    return TareaService(repository)
+
+
+def get_estadistica_repository(
+    session: Session = Depends(get_session),
+) -> EstadisticaRepository:
+    return EstadisticaRepository(session)
+
+
+def get_estadistica_service(
+    repository: EstadisticaRepository = Depends(get_estadistica_repository),
+) -> EstadisticaService:
+    return EstadisticaService(repository)
 
 
 

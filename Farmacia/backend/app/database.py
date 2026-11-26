@@ -92,6 +92,69 @@ def create_db_and_tables() -> None:
                     "VARCHAR(100) DEFAULT 'Sin asignar';"
                 )
             )
+            conn.execute(
+                text(
+                    "ALTER TABLE maquinas "
+                    "ADD COLUMN IF NOT EXISTS activo "
+                    "BOOLEAN DEFAULT TRUE;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE usuarios "
+                    "ADD COLUMN IF NOT EXISTS activo "
+                    "BOOLEAN DEFAULT TRUE;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE repuestos "
+                    "ADD COLUMN IF NOT EXISTS activo "
+                    "BOOLEAN DEFAULT TRUE;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE repuestos "
+                    "ADD COLUMN IF NOT EXISTS ubicacion "
+                    "VARCHAR(200) DEFAULT 'Sin ubicación';"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE movimientos_stock "
+                    "ADD COLUMN IF NOT EXISTS incidencia_id "
+                    "INTEGER NULL;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE movimientos_stock "
+                    "ADD COLUMN IF NOT EXISTS pedido_compra_id "
+                    "INTEGER NULL;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE movimientos_stock "
+                    "ADD COLUMN IF NOT EXISTS maquina "
+                    "VARCHAR(200) NULL;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE movimientos_stock "
+                    "ADD COLUMN IF NOT EXISTS orden_trabajo "
+                    "VARCHAR(100) NULL;"
+                )
+            )
+            conn.execute(
+                text(
+                    "ALTER TABLE movimientos_stock "
+                    "ADD COLUMN IF NOT EXISTS tecnico "
+                    "VARCHAR(200) NULL;"
+                )
+            )
     except Exception as e:
         print(f"Nota de migración tablas: {e}")
 

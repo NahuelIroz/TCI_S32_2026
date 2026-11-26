@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from app.models.incidencia import (
     Incidencia,
+    IncidenciaDetalleRead,
     EstadoIncidencia,
     Turno,
     PrioridadIncidencia,
@@ -60,6 +61,36 @@ class IncidenciaService:
             turno=turno,
             usuario_id=usuario_id,
         )
+
+    def listar_detalladas(
+        self,
+        estado: EstadoIncidencia | None = None,
+        maquina_id: int | None = None,
+    ) -> list[IncidenciaDetalleRead]:
+        filas = self.repository.listar_con_detalle(
+            estado=estado,
+            maquina_id=maquina_id,
+        )
+        resultado: list[IncidenciaDetalleRead] = []
+        for inc, maq, usu, fotos_count in filas:
+            resultado.append(
+                IncidenciaDetalleRead(
+                    id=inc.id or 0,
+                    codigo=inc.codigo,
+                    maquina_id=inc.maquina_id,
+                    codigo_maquina=maq.codigo if maq else "N/A",
+                    maquina=maq.nombre if maq else "Máquina no encontrada",
+                    usuario_reportante_id=inc.usuario_reportante_id,
+                    tecnico=usu.nombre if usu else "Sin asignar",
+                    descripcion=inc.descripcion,
+                    turno=inc.turno,
+                    prioridad=inc.prioridad,
+                    estado=inc.estado,
+                    fecha_reporte=inc.fecha_reporte,
+                    adjuntos=fotos_count,
+                )
+            )
+        return resultado
 
 
     # -----------------------------------------

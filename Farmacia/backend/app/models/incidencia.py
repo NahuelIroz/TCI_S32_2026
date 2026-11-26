@@ -78,5 +78,22 @@ class IncidenciaRead(SQLModel):
     estado: EstadoIncidencia
     fecha_reporte: datetime
 
+
+class IncidenciaDetalleRead(SQLModel):
+    id: int
+    codigo: str
+    maquina_id: int
+    codigo_maquina: str
+    maquina: str
+    usuario_reportante_id: int
+    tecnico: str
+    descripcion: str
+    turno: Turno
+    prioridad: PrioridadIncidencia
+    estado: EstadoIncidencia
+    fecha_reporte: datetime
+    adjuntos: int = 0
+
+
 class IncidenciaEstadoUpdate(SQLModel):
     estado: EstadoIncidencia

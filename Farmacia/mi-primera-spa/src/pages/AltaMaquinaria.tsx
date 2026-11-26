@@ -1,6 +1,9 @@
 import { useState } from "react";
-import { maquinasPlanta, type MaquinaPlanta, type CriticidadMaquina } from "../data/maquinas";
-import { repuestos, type Repuesto } from "../data/repuestos";
+import { type CriticidadMaquina } from "../data/maquinas";
+import {
+  crearMaquinaConBOM,
+  type RepuestoBOMAPI,
+} from "../services/maquinasService";
 import { servicioNotificaciones } from "../services/notificacionesService";
 import "./styles.css";
 
@@ -9,103 +12,66 @@ interface AltaMaquinariaProps {
   onExito?: () => void;
 }
 
-interface RepuestoGenerado {
-  codigo: string;
-  nombre: string;
-  minimoSugerido: number;
-  unidad: string;
-  ubicacionSugerida: string;
-}
-
 export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps) {
   const [codigo, setCodigo] = useState("BLS-ROT-05");
   const [nombre, setNombre] = useState("Blistera Rotativa de Alta Velocidad #05");
+  const [tipo, setTipo] = useState("Blistera");
   const [sector, setSector] = useState("Línea de Envasado B");
   const [criticidad, setCriticidad] = useState<CriticidadMaquina>("Crítica");
   const [responsable, setResponsable] = useState("Carlos Gómez");
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState("");
   const [mensajeExito, setMensajeExito] = useState("");
-  const [repuestosGenerados, setRepuestosGenerados] = useState<RepuestoGenerado[]>([]);
+  const [repuestosGenerados, setRepuestosGenerados] = useState<RepuestoBOMAPI[]>([]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!codigo.trim() || !nombre.trim()) {
-      alert("Por favor completá el código y nombre del equipo.");
+      setError("Por favor completá el código y nombre del equipo.");
       return;
     }
 
-    const nuevaMaquina: MaquinaPlanta = {
-      id: Date.now(),
-      codigo,
-      nombre,
-      sector,
-      estado: "Operativa",
-      criticidad,
-      oee: 92.5,
-      temperatura: "45°C",
-      presion: "6.2 bar",
-      horasOperacion: 0,
-      ultimaRevision: "Hoy",
-      proximoMantenimiento: "30/11/2026",
-      responsable,
-    };
+    try {
+      setGuardando(true);
+      setError("");
+      setMensajeExito("");
 
-    maquinasPlanta.unshift(nuevaMaquina);
+      const respuesta = await crearMaquinaConBOM({
+        codigo: codigo.trim(),
+        nombre: nombre.trim(),
+        tipo: tipo.trim() || "Equipo Industrial",
+        sector,
+        estado: "Operativa",
+        criticidad,
+        oee: 92.5,
+        temperatura: "45°C",
+        presion: "6.2 bar",
+        horas_operacion: 0,
+        ultima_revision: new Date().toLocaleDateString("es-AR"),
+        proximo_mantenimiento: "30/11/2026",
+        responsable,
+      });
 
-    const listaBOM: RepuestoGenerado[] = [
-      {
-        codigo: `SKU-${codigo}-ROD`,
-        nombre: `Rodamiento de Precisión Alta Temp. para ${nombre}`,
-        minimoSugerido: 4,
-        unidad: "unid.",
-        ubicacionSugerida: "Pasillo B · Estante 1",
-      },
-      {
-        codigo: `SKU-${codigo}-COR`,
-        nombre: `Correa Sincrónica Reforzada para ${nombre}`,
-        minimoSugerido: 2,
-        unidad: "unid.",
-        ubicacionSugerida: "Pasillo C · Estante 2",
-      },
-      {
-        codigo: `SKU-${codigo}-VLV`,
-        nombre: `Válvula Reguladora de Flujo 24V para ${nombre}`,
-        minimoSugerido: 3,
-        unidad: "unid.",
-        ubicacionSugerida: "Pasillo B · Gabinete 3",
-      },
-    ];
+      setRepuestosGenerados(respuesta.repuestos_generados);
 
-    setRepuestosGenerados(listaBOM);
+      servicioNotificaciones.enviarNotificacion(
+        "incidente",
+        `🏭 ALTA RN-07: Nueva maquinaria ${nombre} (${codigo}) dada de alta`,
+        ["gerencia@planta.farmacia.com", "encargados@planta.farmacia.com"],
+        `Se ha incorporado ${nombre} en ${sector}. Se generó la lista de ${respuesta.repuestos_generados.length} repuestos obligatorios para stock de seguridad.`
+      );
 
-    // Agregar repuestos al catálogo global si no existen
-    listaBOM.forEach((item) => {
-      const existe = repuestos.some((r) => r.codigo === item.codigo);
-      if (!existe) {
-        const nuevoRep: Repuesto = {
-          id: Date.now() + Math.floor(Math.random() * 1000),
-          codigo: item.codigo,
-          nombre: item.nombre,
-          disponible: item.minimoSugerido,
-          minimo: item.minimoSugerido,
-          unidad: item.unidad,
-          estado: "Disponible",
-          ubicacion: item.ubicacionSugerida,
-        };
-        repuestos.push(nuevoRep);
-      }
-    });
-
-    servicioNotificaciones.enviarNotificacion(
-      "incidente",
-      `🏭 ALTA RN-07: Nueva maquinaria ${nombre} (${codigo}) dada de alta`,
-      ["gerencia@planta.farmacia.com", "encargados@planta.farmacia.com"],
-      `Se ha incorporado ${nombre} en ${sector}. Se generó la lista de ${listaBOM.length} repuestos obligatorios para stock de seguridad.`
-    );
-
-    setMensajeExito(
-      `✓ Máquina ${nombre} registrada exitosamente. Se generó automáticamente la lista de ${listaBOM.length} repuestos a mantener en stock (RN-07).`
-    );
+      setMensajeExito(
+        `✓ Máquina ${respuesta.maquina.nombre} registrada en base de datos. Se generaron automáticamente ${respuesta.repuestos_generados.length} repuestos en stock (RN-07).`
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "No se pudo registrar la máquina."
+      );
+    } finally {
+      setGuardando(false);
+    }
   };
 
   return (
@@ -136,7 +102,13 @@ export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps)
           </div>
         )}
 
-        <form className="formulario-delegar-tarea" onSubmit={handleSubmit}>
+        {error && (
+          <div className="alerta-error" role="alert">
+            ⚠️ {error}
+          </div>
+        )}
+
+        <form className="formulario-delegar-tarea" onSubmit={(e) => void handleSubmit(e)}>
           <h3>Datos del Nuevo Equipo</h3>
 
           <div className="form-row-2">
@@ -164,15 +136,27 @@ export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps)
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="nombreMaq">Nombre / Descripción de la máquina</label>
-            <input
-              id="nombreMaq"
-              type="text"
-              value={nombre}
-              onChange={(e) => setNombre(e.target.value)}
-              required
-            />
+          <div className="form-row-2">
+            <div className="form-group">
+              <label htmlFor="nombreMaq">Nombre / Descripción de la máquina</label>
+              <input
+                id="nombreMaq"
+                type="text"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-group">
+              <label htmlFor="tipoMaq">Tipo de equipo</label>
+              <input
+                id="tipoMaq"
+                type="text"
+                value={tipo}
+                onChange={(e) => setTipo(e.target.value)}
+                required
+              />
+            </div>
           </div>
 
           <div className="form-row-2">
@@ -206,8 +190,10 @@ export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps)
             </div>
           </div>
 
-          <button type="submit" className="boton-enviar">
-            Registrar Máquina y Generar Repuestos (RN-07)
+          <button type="submit" className="boton-enviar" disabled={guardando}>
+            {guardando
+              ? "Registrando equipo y repuestos..."
+              : "Registrar Máquina y Generar Repuestos (RN-07)"}
           </button>
         </form>
 
@@ -225,13 +211,13 @@ export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps)
                     <div>
                       <span className="pedido-id">{rep.codigo}</span>
                       <span className="badge-estado-pedido badge-aprobado">
-                        Umbral mínimo: {rep.minimoSugerido} {rep.unidad}
+                        Umbral mínimo: {rep.minimo_sugerido} {rep.unidad}
                       </span>
                     </div>
                   </div>
                   <h4 className="pedido-titulo">{rep.nombre}</h4>
                   <p className="pedido-justificacion">
-                    <strong>Ubicación de guardado asignada:</strong> {rep.ubicacionSugerida}
+                    <strong>Ubicación de guardado asignada:</strong> {rep.ubicacion_sugerida}
                   </p>
                 </div>
               ))}
@@ -252,4 +238,3 @@ export default function AltaMaquinaria({ onBack, onExito }: AltaMaquinariaProps)
     </div>
   );
 }
-

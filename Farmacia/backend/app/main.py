@@ -32,6 +32,14 @@ from app.controllers.tablero_controller import (
     router as tablero_router,
 )
 
+from app.controllers.tarea_controller import (
+    router as tarea_router,
+)
+
+from app.controllers.estadistica_controller import (
+    router as estadistica_router,
+)
+
 from app.controllers.auth_controller import (
     router as auth_router,
     seed_usuarios_si_no_existen,
@@ -55,6 +63,14 @@ from app.services.maquina_service import (
     seed_maquinas_si_no_existen,
 )
 
+from app.services.tarea_service import (
+    seed_tareas_si_no_existen,
+)
+
+from app.services.pedido_compra_service import (
+    seed_pedidos_compra_si_no_existen,
+)
+
 # Registrar modelos SQLModel
 import app.models
 
@@ -72,6 +88,8 @@ async def lifespan(app: FastAPI):
         seed_usuarios_si_no_existen(session)
         seed_repuestos_si_no_existen(session)
         seed_maquinas_si_no_existen(session)
+        seed_tareas_si_no_existen(session)
+        seed_pedidos_compra_si_no_existen(session)
 
     yield
 
@@ -146,6 +164,8 @@ app.include_router(pedido_compra_router)
 app.include_router(auth_router)
 app.include_router(scanner_router)
 app.include_router(tablero_router)
+app.include_router(tarea_router)
+app.include_router(estadistica_router)
 
 # NUEVO: endpoints de fotografías
 app.include_router(foto_incidencia_router)

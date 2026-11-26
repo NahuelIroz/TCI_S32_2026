@@ -41,3 +41,23 @@ class PedidoCompraRepository:
         session.add(pedido)
         session.flush()
         return pedido
+
+    def listar_por_estados(
+        self,
+        session: Session,
+        estados: list
+    ) -> list[PedidoCompra]:
+        statement = select(PedidoCompra).where(
+            PedidoCompra.estado.in_(estados)
+        )
+        return list(session.exec(statement).all())
+
+    def listar_no_leidos(
+        self,
+        session: Session
+    ) -> list[PedidoCompra]:
+        statement = select(PedidoCompra).where(
+            PedidoCompra.notificacion_leida == False
+        )
+        return list(session.exec(statement).all())
+
