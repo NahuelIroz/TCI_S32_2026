@@ -16,19 +16,42 @@ const destinos: Record<string, string> = {
   "ingresar-stock": "ingresarStock", "consultar-stock": "stock",
   "registrar-uso": "registrarUso", "pedidos-compra": "pedidosCompra",
   "gestionar-compras": "gestionarCompras", "cargar-stock-recibido": "cargarStockRecibido",
-  "supervisar-tareas": "supervisarTareas", "gestionar-repuestos": "gestionarRepuestos",
+  "supervisar-tareas": "supervisarTareas",
+  "mis-tareas": "misTareas",
+  "gestionar-repuestos": "gestionarRepuestos",
   "gestionar-maquinas": "gestionarMaquinas", "tableros-seguimiento": "tablerosSeguimiento",
   "visualizar-incidencias": "visualizarIncidencias", "estado-maquinas": "estadoMaquinas",
   "estadisticas-historicos": "estadisticasHistoricos", "notificaciones-compras": "notificacionesCompras",
   "trazabilidad": "trazabilidad", "alta-maquinaria": "altaMaquinaria",
 };
 function grupo(a: AccionPerfil) {
-  if (a.permiso.startsWith("incidencias")) return "Incidencias";
-  if (a.permiso.startsWith("compras")) return "Compras";
-  if (a.permiso.startsWith("stock") || a.permiso.startsWith("repuestos") || a.id === "registrar-uso") return "Stock";
-  if (a.permiso.startsWith("maquinas")) return "Equipos";
+  if (a.permiso.startsWith("incidencias")) {
+    return "Incidencias";
+  }
+
+  if (a.permiso.startsWith("compras")) {
+    return "Compras";
+  }
+
+  if (
+    a.permiso.startsWith("stock") ||
+    a.permiso.startsWith("repuestos") ||
+    a.id === "registrar-uso"
+  ) {
+    return "Stock";
+  }
+
+  if (a.permiso.startsWith("maquinas")) {
+    return "Equipos";
+  }
+
+  if (a.permiso.startsWith("tareas")) {
+    return "Tareas";
+  }
+
   return "Seguimiento";
 }
+
 export default function Navbar({ usuario, pantallaActual, onInicio, onAccion, onCerrarSesion }: Props) {
   const [abierto, setAbierto] = useState(false);
   const [panel, setPanel] = useState<string | null>(null);

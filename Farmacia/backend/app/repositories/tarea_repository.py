@@ -15,11 +15,16 @@ class TareaRepository:
         tipo: TipoTarea | None = None,
         estado: EstadoTarea | None = None,
         maquina_id: int | None = None,
+        tecnico_asignado_id: int | None = None,
     ) -> list[tuple[Tarea, Maquina | None, Usuario | None]]:
         statement = (
             select(Tarea, Maquina, Usuario)
             .join(Maquina, Tarea.maquina_id == Maquina.id, isouter=True)
-            .join(Usuario, Tarea.tecnico_asignado_id == Usuario.id, isouter=True)
+            .join(
+                Usuario,
+                Tarea.tecnico_asignado_id == Usuario.id,
+                isouter=True
+            )
         )
 
         if tipo is not None:
@@ -29,7 +34,14 @@ class TareaRepository:
             statement = statement.where(Tarea.estado == estado)
 
         if maquina_id is not None:
-            statement = statement.where(Tarea.maquina_id == maquina_id)
+            statement = statement.where(
+                Tarea.maquina_id == maquina_id
+            )
+
+        if tecnico_asignado_id is not None:
+            statement = statement.where(
+                Tarea.tecnico_asignado_id == tecnico_asignado_id
+            )
 
         statement = statement.order_by(Tarea.id.desc())
 

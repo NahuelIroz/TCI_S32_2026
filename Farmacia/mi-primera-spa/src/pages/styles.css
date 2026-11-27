@@ -3254,3 +3254,64 @@ body {
     gap: 20px;
   }
 }
+
+/* ==========================================
+   GESTIÓN DE TAREAS - RESPONSIVE
+========================================== */
+
+.tareas-lista {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.tarea-card {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.tarea-card input[type="range"] {
+  width: 100%;
+  accent-color: #20a36a;
+  cursor: pointer;
+}
+
+.tarea-card textarea {
+  width: 100%;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.tarea-acciones-supervisor {
+  flex-wrap: wrap;
+}
+
+.tarea-card-top {
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Tablet */
+
+@media (min-width: 768px) {
+  .tareas-lista {
+    gap: 20px;
+  }
+
+  .tarea-card {
+    padding: 20px;
+  }
+}
+
+/* Escritorio */
+
+@media (min-width: 1200px) {
+  .tareas-lista {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+  }
+
+  .formulario-delegar-tarea {
+    padding: 24px;
+  }
+}

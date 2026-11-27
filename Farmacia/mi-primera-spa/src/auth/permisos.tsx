@@ -20,6 +20,7 @@ export type Permiso =
   | "compras.aprobar"
   | "reservas.liberar"
   | "tareas.supervisar"
+  | "tareas.consultar_propias"
   | "tableros.consultar"
   | "maquinas.consultar"
   | "estadisticas.consultar"
@@ -43,6 +44,7 @@ export const permisosPorRol: Record<RolUsuario, Permiso[]> = {
     "compras.gestionar",
     "compras.cotizar",
     "incidencias.gestionar",
+    "tareas.consultar_propias",
   ],
 
   ENCARGADO: [
@@ -197,7 +199,14 @@ export function getAccionesParaRol(rol: RolUsuario): AccionPerfil[] {
 
   if (rol === "MANTENIMIENTO") {
     return [
-      
+      {
+        id: "mis-tareas",
+        permiso: "tareas.consultar_propias",
+        titulo: "Mis tareas asignadas",
+        descripcion: "Consultar trabajos asignados y registrar su avance",
+        icono: "tasks",
+        color: "teal",
+      },
       {
         id: "ingresar-stock",
         permiso: "stock.ingresar",

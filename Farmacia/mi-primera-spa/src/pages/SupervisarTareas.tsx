@@ -1,104 +1,75 @@
-import { useState } from "react";
-import {
-  tareasIniciales,
-  type TareaMantenimiento,
-  type EstadoTarea,
-  type PrioridadTarea,
-  type TipoTarea,
-} from "../data/tareas";
+import { useEffect, useState } from "react";
+import type { FormEvent } from "react";
+import { obtenerTareas, obtenerTecnicos, crearTarea, actualizarProgresoTarea, type TareaAPI, type TecnicoAPI, type PrioridadTarea, type TipoTarea } from "../services/tareasService";
+import { obtenerMaquinas, type MaquinaAPI } from "../services/maquinasService";
 import "./styles.css";
 
-interface SupervisarTareasProps {
-  onBack?: () => void;
-}
-
+interface SupervisarTareasProps { onBack?: () => void; }
 export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
-  const [tareas, setTareas] = useState<TareaMantenimiento[]>(tareasIniciales);
-  const [filtroEstado, setFiltroEstado] = useState<string>("todas");
+  const [tareas, setTareas] = useState<TareaAPI[]>([]);
+  const [maquinas, setMaquinas] = useState<MaquinaAPI[]>([]);
+  const [tecnicos, setTecnicos] = useState<TecnicoAPI[]>([]);
+  const [filtroEstado, setFiltroEstado] = useState("todas");
   const [mostrarModalDelegar, setMostrarModalDelegar] = useState(false);
-  const [mensajeFeedback, setMensajeFeedback] = useState<string>("");
-
-  // Formulario nueva tarea
+  const [mensajeFeedback, setMensajeFeedback] = useState("");
+  const [error, setError] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
   const [nuevoTitulo, setNuevoTitulo] = useState("");
   const [nuevaDescripcion, setNuevaDescripcion] = useState("");
-  const [nuevaMaquina, setNuevaMaquina] = useState("Envasadora Rotativa #03");
-  const [nuevoTecnico, setNuevoTecnico] = useState("Carlos Gómez");
+  const [nuevaMaquina, setNuevaMaquina] = useState("");
+  const [nuevoTecnico, setNuevoTecnico] = useState("");
   const [nuevaPrioridad, setNuevaPrioridad] = useState<PrioridadTarea>("Alta");
   const [nuevoTipo, setNuevoTipo] = useState<TipoTarea>("Preventivo");
-  const [nuevaFechaLimite, setNuevaFechaLimite] = useState("05/11/2026");
+  const [nuevaFechaLimite, setNuevaFechaLimite] = useState("");
 
-  const handleCrearTarea = (e: React.FormEvent) => {
+  async function cargar() {
+    setCargando(true); setError("");
+    try {
+      const [t, m, u] = await Promise.all([obtenerTareas(), obtenerMaquinas(), obtenerTecnicos()]);
+      setTareas(t); setMaquinas(m); setTecnicos(u);
+    } catch (e) { setError(e instanceof Error ? e.message : "No se pudieron cargar los datos"); }
+    finally { setCargando(false); }
+  }
+  useEffect(() => { void cargar(); }, []);
+
+  async function handleCrearTarea(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!nuevoTitulo.trim()) {
-      alert("Por favor ingresá el título de la tarea.");
-      return;
-    }
-
-    const nueva: TareaMantenimiento = {
-      id: Date.now(),
-      codigo: `TAR-2026-0${tareas.length + 85}`,
-      titulo: nuevoTitulo,
-      descripcion: nuevaDescripcion,
-      maquina: nuevaMaquina,
-      codigoMaquina: nuevaMaquina.includes("Envasadora")
-        ? "SEC-ENV-03"
-        : nuevaMaquina.includes("Prensa")
-        ? "HYD-PRE-12"
-        : "CMP-CTR-01",
-      tecnicoAsignado: nuevoTecnico,
-      prioridad: nuevaPrioridad,
-      tipo: nuevoTipo,
-      estado: "Pendiente",
-      fechaLimite: nuevaFechaLimite,
-      progreso: 0,
-      observaciones: "Asignada por Encargado de Mantenimiento.",
-    };
-
-    setTareas([nueva, ...tareas]);
-    setMostrarModalDelegar(false);
-    setNuevoTitulo("");
-    setNuevaDescripcion("");
-    setMensajeFeedback(`Tarea "${nueva.codigo}" asignada con éxito a ${nueva.tecnicoAsignado}.`);
-  };
-
-  const handleActualizarProgreso = (id: number, delta: number) => {
-    setTareas((prev) =>
-      prev.map((t) => {
-        if (t.id !== id) return t;
-        const nuevoProgreso = Math.min(100, Math.max(0, t.progreso + delta));
-        const nuevoEstado: EstadoTarea =
-          nuevoProgreso === 100
-            ? "Completada"
-            : nuevoProgreso > 0
-            ? "En Curso"
-            : "Pendiente";
-        return {
-          ...t,
-          progreso: nuevoProgreso,
-          estado: nuevoEstado,
-        };
-      })
-    );
-  };
-
-  const handleMarcarCompletada = (id: number) => {
-    setTareas((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, progreso: 100, estado: "Completada" } : t
-      )
-    );
-    setMensajeFeedback("Tarea marcada como completada al 100%.");
-  };
-
-  const tareasFiltradas = tareas.filter((t) => {
-    if (filtroEstado === "todas") return true;
-    return t.estado.toLowerCase() === filtroEstado.toLowerCase();
-  });
-
-  const enCursoCount = tareas.filter((t) => t.estado === "En Curso").length;
-  const pendientesCount = tareas.filter((t) => t.estado === "Pendiente").length;
-  const completadasCount = tareas.filter((t) => t.estado === "Completada").length;
-
+    if (guardando || !nuevoTitulo.trim() || !nuevaMaquina) return;
+    setGuardando(true); setError(""); setMensajeFeedback("");
+    try {
+      const nueva = await crearTarea({
+        codigo: `TAR-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,
+        titulo: nuevoTitulo.trim(), descripcion: nuevaDescripcion.trim(),
+        maquina_id: Number(nuevaMaquina), tecnico_asignado_id: nuevoTecnico ? Number(nuevoTecnico) : null,
+        prioridad: nuevaPrioridad, tipo: nuevoTipo, estado: "Pendiente", progreso: 0,
+        fecha_limite: nuevaFechaLimite.split("-").reverse().join("/"), observaciones: null,
+      });
+      setTareas(prev => [nueva, ...prev]); setMostrarModalDelegar(false);
+      setNuevoTitulo(""); setNuevaDescripcion(""); setNuevaMaquina(""); setNuevoTecnico(""); setNuevaFechaLimite(""); setFiltroEstado("todas");
+      setMensajeFeedback(`Tarea ${nueva.codigo} guardada correctamente.`);
+    } catch (e) { setError(e instanceof Error ? e.message : "No se pudo crear la tarea"); }
+    finally { setGuardando(false); }
+  }
+  async function guardarProgreso(id: number, progreso: number) {
+    if (guardando) return;
+    setGuardando(true); setError(""); setMensajeFeedback("");
+    try {
+      const actualizada = await actualizarProgresoTarea(id, progreso);
+      setTareas(prev => prev.map(t => t.id === id ? actualizada : t));
+      setMensajeFeedback("Progreso actualizado correctamente.");
+    } catch (e) { setError(e instanceof Error ? e.message : "No se pudo actualizar la tarea"); }
+    finally { setGuardando(false); }
+  }
+  function handleActualizarProgreso(id: number, delta: number) {
+    const t = tareas.find(t => t.id === id);
+    if (t) void guardarProgreso(id, Math.max(0, Math.min(100, t.progreso + delta)));
+  }
+  function handleMarcarCompletada(id: number) { void guardarProgreso(id, 100); }
+  const tareasFiltradas = tareas.filter(t => filtroEstado === "todas" || t.estado.toLowerCase() === filtroEstado);
+  const enCursoCount = tareas.filter(t => t.estado === "En Curso").length;
+  const pendientesCount = tareas.filter(t => t.estado === "Pendiente").length;
+  const completadasCount = tareas.filter(t => t.estado === "Completada").length;
   return (
     <div className="incidencia-container">
       <header className="incidencia-header">
@@ -123,12 +94,16 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           <button
             type="button"
             className="btn-nueva-incidencia"
+            disabled={cargando || guardando}
             onClick={() => setMostrarModalDelegar(!mostrarModalDelegar)}
           >
             {mostrarModalDelegar ? "✕ Cancelar" : "+ Delegar Nueva Tarea"}
           </button>
         </div>
 
+        <button type="button" className="btn-progreso" disabled={cargando || guardando} onClick={() => void cargar()}>Actualizar listado</button>
+        {cargando && <p role="status">Cargando tareas...</p>}
+        {error && <p role="alert">{error}</p>}
         {mensajeFeedback && (
           <div className="feedback-banner feedback-banner-success" role="status">
             <span>✓</span> {mensajeFeedback}
@@ -155,15 +130,12 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
               <div className="form-group">
                 <label htmlFor="maquinaTarea">Equipo / Máquina</label>
                 <select
-                  id="maquinaTarea"
+                  id="maquinaTarea" required
                   value={nuevaMaquina}
                   onChange={(e) => setNuevaMaquina(e.target.value)}
                 >
-                  <option value="Envasadora Rotativa #03">Envasadora Rotativa #03</option>
-                  <option value="Prensa Hidráulica H-12">Prensa Hidráulica H-12</option>
-                  <option value="Compresor Central C-01">Compresor Central C-01</option>
-                  <option value="Blistera Automática #04">Blistera Automática #04</option>
-                  <option value="Lavadora de Ampollas L-02">Lavadora de Ampollas L-02</option>
+                  <option value="">Seleccioná una máquina</option>
+                  {maquinas.map(m => <option key={m.id} value={m.id}>{m.nombre} ({m.codigo})</option>)}
                 </select>
               </div>
 
@@ -174,10 +146,8 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
                   value={nuevoTecnico}
                   onChange={(e) => setNuevoTecnico(e.target.value)}
                 >
-                  <option value="Carlos Gómez">Carlos Gómez (Mecánica)</option>
-                  <option value="J. Morales">J. Morales (Hidráulica / Neumática)</option>
-                  <option value="M. López">M. López (Electricidad / Automatización)</option>
-                  <option value="Sin asignar">Sin asignar (Bolsa de trabajo)</option>
+                  <option value="">Sin asignar</option>
+                  {tecnicos.map(t => <option key={t.id} value={t.id}>{t.nombre} ({t.username})</option>)}
                 </select>
               </div>
             </div>
@@ -213,7 +183,7 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
                 <label htmlFor="fechaLimiteTarea">Fecha Límite</label>
                 <input
                   id="fechaLimiteTarea"
-                  type="text"
+                  type="date" required
                   placeholder="DD/MM/AAAA"
                   value={nuevaFechaLimite}
                   onChange={(e) => setNuevaFechaLimite(e.target.value)}
@@ -232,7 +202,7 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
               />
             </div>
 
-            <button type="submit" className="boton-enviar">
+            <button type="submit" className="boton-enviar" disabled={guardando || cargando}>
               Confirmar Delegación de Tarea
             </button>
           </form>
@@ -252,7 +222,7 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           <div className="kpi-card">
             <span className="kpi-label">Completadas</span>
             <strong className="kpi-value text-green">{completadasCount}</strong>
-            <span className="kpi-desc">Auditadas y cerradas</span>
+            <span className="kpi-desc">Avance del 100%</span>
           </div>
         </div>
 
@@ -287,6 +257,8 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
           </button>
         </div>
 
+        <button type="button" className={`filtro-tab ${filtroEstado === "demorada" ? "active" : ""}`} onClick={() => setFiltroEstado("demorada")}>Demoradas ({tareas.filter(t => t.estado === "Demorada").length})</button>
+        {!cargando && !error && tareasFiltradas.length === 0 && <p>No hay tareas para este filtro.</p>}
         <div className="tareas-lista">
           {tareasFiltradas.map((tarea) => (
             <div key={tarea.id} className="tarea-card">
@@ -327,10 +299,10 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
 
               <div className="tarea-meta-row">
                 <span>
-                  <strong>Técnico:</strong> {tarea.tecnicoAsignado}
+                  <strong>Técnico:</strong> {tarea.tecnico_asignado}
                 </span>
                 <span>
-                  <strong>Límite:</strong> {tarea.fechaLimite}
+                  <strong>Límite:</strong> {tarea.fecha_limite}
                 </span>
                 {tarea.observaciones && (
                   <span className="tarea-nota">
@@ -364,7 +336,7 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
                   type="button"
                   className="btn-progreso"
                   onClick={() => handleActualizarProgreso(tarea.id, 25)}
-                  disabled={tarea.progreso >= 100}
+                  disabled={guardando || tarea.progreso >= 100}
                 >
                   +25% Avance
                 </button>
@@ -372,14 +344,14 @@ export default function SupervisarTareas({ onBack }: SupervisarTareasProps) {
                   type="button"
                   className="btn-progreso"
                   onClick={() => handleActualizarProgreso(tarea.id, -25)}
-                  disabled={tarea.progreso <= 0}
+                  disabled={guardando || tarea.progreso <= 0}
                 >
                   -25%
                 </button>
                 {tarea.progreso < 100 && (
                   <button
                     type="button"
-                    className="btn-aprobar-completado"
+                    className="btn-aprobar-completado" disabled={guardando}
                     onClick={() => handleMarcarCompletada(tarea.id)}
                   >
                     ✓ Aprobar Cumplimiento
