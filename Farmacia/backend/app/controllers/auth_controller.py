@@ -19,9 +19,7 @@ router = APIRouter(
 )
 
 
-# ==========================================
-# ESQUEMAS DE REQUEST / RESPONSE
-# ==========================================
+
 
 class LoginRequest(BaseModel):
     username: str
@@ -41,9 +39,7 @@ class LoginResponse(BaseModel):
     usuario: UsuarioResponse
 
 
-# ==========================================
-# CREAR USUARIOS DE PRUEBA
-# ==========================================
+
 
 def seed_usuarios_si_no_existen(session: Session) -> None:
     """Crea los usuarios base si no existen en la base de datos."""
@@ -100,9 +96,7 @@ def seed_usuarios_si_no_existen(session: Session) -> None:
     session.commit()
 
 
-# ==========================================
-# LOGIN
-# ==========================================
+
 
 @router.post("/login", response_model=LoginResponse)
 def login(

@@ -12,7 +12,7 @@ SECRET_KEY = os.getenv(
     "clave-secreta-para-firmar-tokens-jwt-farmacia-2026-tci"
 )
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8  # 8 horas de sesión
+ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8  
 
 
 def hashear_password(password: str) -> str:

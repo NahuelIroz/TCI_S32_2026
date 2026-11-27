@@ -25,9 +25,5 @@ def resolver_codigo_qr(
     codigo: str,
     session: Session = Depends(get_session)
 ):
-    """
-    Recibe el texto leído por el escáner QR y devuelve la entidad
-    correspondiente (Repuesto o Máquina) con sus datos en tiempo real.
-    Si no se encuentra nada, retorna encontrado=false en lugar de lanzar un 404.
-    """
+    """Resuelve un código QR y devuelve información sobre la entidad encontrada."""
     return service.resolver_codigo(session, codigo)
