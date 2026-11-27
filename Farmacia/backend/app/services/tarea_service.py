@@ -16,8 +16,14 @@ class TareaService:
         tipo: TipoTarea | None = None,
         estado: EstadoTarea | None = None,
         maquina_id: int | None = None,
+        tecnico_asignado_id: int | None = None,
     ) -> list[TareaRead]:
-        filas = self.repository.listar(tipo=tipo, estado=estado, maquina_id=maquina_id)
+        filas = self.repository.listar(
+            tipo=tipo,
+            estado=estado,
+            maquina_id=maquina_id,
+            tecnico_asignado_id=tecnico_asignado_id,
+        )
         resultado: list[TareaRead] = []
         for tarea, maq, usu in filas:
             resultado.append(
@@ -81,17 +87,39 @@ class TareaService:
         guardada = self.repository.crear(tarea)
         return self.obtener_por_id(guardada.id or 0)
 
-    def actualizar_progreso(self, tarea_id: int, nuevo_progreso: int) -> TareaRead:
+    def actualizar_progreso(
+        self,
+        tarea_id: int,
+        nuevo_progreso: int,
+        observaciones: str | None = None,
+    ) -> TareaRead:
+
         registro = self.repository.obtener_por_id(tarea_id)
+
         if registro is None:
             raise ValueError("La tarea no existe")
+
         tarea, _, _ = registro
+
         tarea.progreso = min(100, max(0, nuevo_progreso))
+
         if tarea.progreso == 100:
             tarea.estado = EstadoTarea.COMPLETADA
-        elif tarea.progreso > 0 and tarea.estado == EstadoTarea.PENDIENTE:
+
+        elif tarea.estado == EstadoTarea.DEMORADA:
+            tarea.estado = EstadoTarea.DEMORADA
+
+        elif tarea.progreso > 0:
             tarea.estado = EstadoTarea.EN_CURSO
+
+        else:
+            tarea.estado = EstadoTarea.PENDIENTE
+
+        if observaciones is not None:
+            tarea.observaciones = observaciones
+
         self.repository.actualizar(tarea)
+
         return self.obtener_por_id(tarea_id)
 
 

@@ -59,3 +59,32 @@ export async function apiPost<TRespuesta, TDatos>(
 
   return response.json() as Promise<TRespuesta>;
 }
+
+export async function apiPatch<TRespuesta, TDatos>(
+  endpoint: string,
+  datos: TDatos
+): Promise<TRespuesta> {
+
+  const response = await fetch(`${API_URL}${endpoint}`, {
+    method: "PATCH",
+    headers: obtenerHeadersAuth(),
+    body: JSON.stringify(datos),
+  });
+
+  if (!response.ok) {
+
+    if (response.status === 401) {
+      localStorage.removeItem("token");
+    }
+
+    const error = await response.json().catch(() => null);
+
+    throw new Error(
+      error?.detail && typeof error.detail === "string"
+        ? error.detail
+        : `Error HTTP ${response.status}`
+    );
+  }
+
+  return response.json() as Promise<TRespuesta>;
+}

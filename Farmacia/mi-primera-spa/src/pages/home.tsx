@@ -10,6 +10,7 @@ import RegistrarUsoRepuesto from "./RegistrarUsoRepuesto";
 import PedidosCompra from "./PedidosCompra";
 import GestionCompras from "./GestionCompras";
 import SupervisarTareas from "./SupervisarTareas";
+import MisTareas from "./MisTareas";
 import LiberarReservas from "./LiberarReservas";
 import NecesidadesReposicion from "./NecesidadesReposicion";
 import TableroSeguimiento from "./TableroSeguimiento";
@@ -47,6 +48,7 @@ type Pantalla =
   | "gestionarCompras"
   | "cargarStockRecibido"
   | "supervisarTareas"
+  | "misTareas"
   | "liberarReservas"
   | "necesidadesReposicion"
   | "tablerosSeguimiento"
@@ -146,7 +148,15 @@ export default function Home({
         }
         break;
       case "supervisar-tareas":
-        setPantalla("supervisarTareas");
+        if (tienePermiso(usuario.rol, "tareas.supervisar")) {
+          setPantalla("supervisarTareas");
+        }
+        break;
+
+      case "mis-tareas":
+        if (tienePermiso(usuario.rol, "tareas.consultar_propias")) {
+          setPantalla("misTareas");
+        }
         break;
       case "liberar-reservas":
         setPantalla("liberarReservas");
@@ -246,10 +256,27 @@ export default function Home({
     );
   }
 
-  if (pantalla === "supervisarTareas") {
-    return <SupervisarTareas onBack={() => setPantalla("home")} />;
+  if (
+    pantalla === "supervisarTareas" &&
+    tienePermiso(usuario.rol, "tareas.supervisar")
+  ) {
+    return (
+      <SupervisarTareas
+        onBack={() => setPantalla("home")}
+      />
+    );
   }
 
+  if (
+    pantalla === "misTareas" &&
+    tienePermiso(usuario.rol, "tareas.consultar_propias")
+  ) {
+    return (
+      <MisTareas
+        onBack={() => setPantalla("home")}
+      />
+    );
+  }
   if (pantalla === "liberarReservas") {
     return <LiberarReservas onBack={() => setPantalla("home")} />;
   }
